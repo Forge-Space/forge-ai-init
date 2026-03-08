@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { writeFileSync } from 'node:fs';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { detectStack } from './detector.js';
@@ -7,6 +8,10 @@ import { runAudit, type CheckStatus } from './checker.js';
 import { scanProject, type Severity } from './scanner.js';
 import { updateProject } from './updater.js';
 import { writeReport, type ReportFormat } from './reporter.js';
+import {
+  assessProject,
+  type AssessmentReport,
+} from './assessor.js';
 import type { AITool, DetectedStack, Tier } from './types.js';
 
 function formatStack(stack: DetectedStack): string {
@@ -58,11 +63,13 @@ ${pc.dim('Usage:')}
   forge-ai-init [options]
   forge-ai-init check
   forge-ai-init migrate
+  forge-ai-init assess
   forge-ai-init update
 
 ${pc.dim('Commands:')}
   ${pc.cyan('check')}        Audit governance maturity (A-F grade)
   ${pc.cyan('migrate')}      Scan code for anti-patterns and tech debt
+  ${pc.cyan('assess')}       Full migration health assessment (5 categories)
   ${pc.cyan('update')}       Re-generate governance files (auto-detects tier/tools)
 
 ${pc.dim('Options:')}
@@ -73,7 +80,9 @@ ${pc.dim('Options:')}
   --force              Overwrite existing files
   --dry-run            Show what would be created
   --yes                Skip interactive prompts
-  --json               Output as JSON (migrate command)
+  --json               Output as JSON (migrate/assess commands)
+  --output <path>      Write report to file (migrate/assess)
+  --format <fmt>       Report format: json, markdown, sarif (migrate/assess)
   --help               Show this help
 
 ${pc.dim('Tiers:')}
@@ -89,6 +98,9 @@ ${pc.dim('Examples:')}
   npx forge-ai-init check
   npx forge-ai-init migrate
   npx forge-ai-init migrate --json
+  npx forge-ai-init assess
+  npx forge-ai-init assess --json
+  npx forge-ai-init assess --format markdown --output report.md
   npx forge-ai-init update
   npx forge-ai-init update --tier enterprise
 `);
@@ -109,6 +121,7 @@ function parseArgs(
     else if (arg === 'check') opts['command'] = 'check';
     else if (arg === 'migrate') opts['command'] = 'migrate';
     else if (arg === 'update') opts['command'] = 'update';
+    else if (arg === 'assess') opts['command'] = 'assess';
     else if (arg?.startsWith('--') && i + 1 < args.length)
       opts[arg.slice(2)] = args[++i] ?? '';
   }
@@ -443,6 +456,136 @@ function runScanCommand(
   }
 }
 
+function runAssessCommand(
+  projectDir: string,
+  stack: DetectedStack,
+  asJson: boolean,
+  outputPath?: string,
+  format?: string,
+): void {
+  const report = assessProject(projectDir, stack);
+
+  if (outputPath) {
+    const fmt = (format ?? 'json') as ReportFormat;
+    const assessData = JSON.stringify(report, null, 2);
+    const content = fmt === 'json'
+      ? assessData
+      : fmt === 'markdown'
+        ? formatAssessMarkdown(report)
+        : assessData;
+    writeFileSync(outputPath, content, 'utf-8');
+    console.log(
+      `  ${pc.green('✓')} Assessment written to ${outputPath} (${fmt})`,
+    );
+    return;
+  }
+
+  if (asJson) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init assess'))} — Migration Health Assessment`,
+  );
+  console.log('');
+  console.log(`  ${pc.dim('Project:')} ${projectDir}`);
+  console.log(`  ${pc.dim('Files scanned:')} ${report.filesScanned}`);
+  console.log('');
+
+  for (const cat of report.categories) {
+    const gradeStr = gradeColor(cat.grade);
+    const critLabel = cat.critical > 0
+      ? pc.red(` (${cat.critical} critical)`)
+      : '';
+    console.log(
+      `  ${pc.bold(cat.category)} ${pc.dim('─'.repeat(22 - cat.category.length))} ${gradeStr} ${cat.score}/100${critLabel}`,
+    );
+  }
+  console.log('');
+
+  console.log(
+    pc.bold(
+      `  Overall: ${gradeColor(report.overallGrade)}  Score: ${report.overallScore}/100`,
+    ),
+  );
+  console.log(
+    `  ${pc.dim('Strategy:')} ${pc.cyan(report.migrationStrategy)}`,
+  );
+  console.log(
+    `  ${pc.dim('Readiness:')} ${report.migrationReadiness === 'ready' ? pc.green('ready') : report.migrationReadiness === 'needs-work' ? pc.yellow('needs-work') : pc.red('high-risk')}`,
+  );
+  console.log('');
+
+  const critical = report.findings.filter(
+    (f) => f.severity === 'critical' || f.severity === 'high',
+  );
+  if (critical.length > 0) {
+    console.log(`  ${pc.bold('Top issues:')}`);
+    for (const f of critical.slice(0, 10)) {
+      console.log(
+        `    ${severityColor(f.severity)} ${f.title}`,
+      );
+      if (f.file) {
+        console.log(`      ${pc.dim(f.file)}`);
+      }
+    }
+    if (critical.length > 10) {
+      console.log(
+        pc.dim(`    ... and ${critical.length - 10} more`),
+      );
+    }
+    console.log('');
+  }
+}
+
+function formatAssessMarkdown(
+  report: AssessmentReport,
+): string {
+  const lines: string[] = [];
+  lines.push('# forge-ai-init Assessment Report');
+  lines.push('');
+  lines.push(
+    `**Grade:** ${report.overallGrade} | **Score:** ${report.overallScore}/100 | **Files:** ${report.filesScanned}`,
+  );
+  lines.push(
+    `**Strategy:** ${report.migrationStrategy} | **Readiness:** ${report.migrationReadiness}`,
+  );
+  lines.push('');
+  lines.push('## Categories');
+  lines.push('');
+  lines.push('| Category | Score | Grade | Findings | Critical |');
+  lines.push('|----------|-------|-------|----------|----------|');
+  for (const cat of report.categories) {
+    lines.push(
+      `| ${cat.category} | ${cat.score}/100 | ${cat.grade} | ${cat.findings} | ${cat.critical} |`,
+    );
+  }
+  lines.push('');
+
+  const critical = report.findings.filter(
+    (f) => f.severity === 'critical' || f.severity === 'high',
+  );
+  if (critical.length > 0) {
+    lines.push('## Critical & High Findings');
+    lines.push('');
+    for (const f of critical.slice(0, 30)) {
+      lines.push(
+        `- **${f.severity}** [${f.category}] ${f.title}`,
+      );
+      if (f.file) {
+        lines.push(`  ${f.file}`);
+      }
+    }
+    lines.push('');
+  }
+
+  lines.push(`*Generated by forge-ai-init v0.11.0*`);
+  lines.push('');
+  return lines.join('\n');
+}
+
 function printResult(
   projectDir: string,
   result: { created: string[]; skipped: string[] },
@@ -678,6 +821,17 @@ async function main(): Promise<void> {
   if (opts['command'] === 'migrate') {
     runScanCommand(
       projectDir,
+      opts['json'] === true,
+      opts['output'] as string | undefined,
+      opts['format'] as string | undefined,
+    );
+    return;
+  }
+
+  if (opts['command'] === 'assess') {
+    runAssessCommand(
+      projectDir,
+      stack,
       opts['json'] === true,
       opts['output'] as string | undefined,
       opts['format'] as string | undefined,

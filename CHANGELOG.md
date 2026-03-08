@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0] - 2026-03-08
+
+### Added
+
+- **Restore `assess` command** — full migration health assessment with 5 collectors (dependencies, architecture, security, quality, migration readiness)
+- **`--output` and `--format` flags for `assess` command** — export assessment as JSON or Markdown to file (closes #6)
+- **Semgrep CE and Trivy security scanning** CI workflows using reusable workflows from Forge-Space/.github
+
+### Fixed
+
+- `assess` command handler was accidentally removed during dead code cleanup in v0.9.0
+
 ## [0.11.0] - 2026-03-08
 
 ### Added
