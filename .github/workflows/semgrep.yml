@@ -1,0 +1,12 @@
+name: Semgrep CE
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/semgrep.yml
+
+jobs:
+  semgrep:
+    uses: Forge-Space/.github/.github/workflows/reusable-semgrep.yml@main
