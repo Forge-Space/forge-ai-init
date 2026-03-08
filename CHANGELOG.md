@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.5.0] - 2026-03-08
+
+### Added
+
+- **`check` command** — Governance audit that scores any project's engineering maturity (A-F grade, 0-100 score)
+  - 7 audit categories: AI Rules, Skills, Hooks & Safety, CI/CD, Security, Code Quality, Policies
+  - 20+ weighted checks across categories
+  - Weighted scoring: critical checks (CI, type checking, CLAUDE.md) worth 3x, nice-to-haves worth 1x
+  - Color-coded terminal output with pass/fail/warn indicators
+  - Actionable recommendations with exact fix commands
+  - Works on ANY project — not just forge-ai-init generated ones
+- 14 new checker tests (120 total across 7 suites)
+
+### Example
+
+```bash
+$ npx forge-ai-init check
+
+  AI Rules ──────────── 4/4  ✓
+  Skills ────────────── 2/2  ✓
+  Hooks & Safety ────── 3/3  ✓
+  CI/CD ─────────────── 3/3  ✓
+  Security ──────────── 3/3  ✓
+  Code Quality ──────── 4/4  ✓
+  Policies ──────────── 3/3  ✓
+
+  Grade: A  Score: 100/100
+```
+
 ## [0.4.0] - 2026-03-08
 
 ### Added

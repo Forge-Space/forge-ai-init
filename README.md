@@ -130,6 +130,38 @@ npx forge-ai-init --dir /path/to/project
 | `--dry-run` | Show what would be created | `false` |
 | `--yes` | Skip interactive prompts | `false` |
 
+## Governance Audit
+
+Run `check` to audit any project's governance maturity — no generation needed:
+
+```bash
+npx forge-ai-init check
+```
+
+Scores 7 categories with 20+ weighted checks:
+
+| Category | What it checks |
+|----------|---------------|
+| AI Rules | CLAUDE.md, AI governance rules, anti-patterns, multi-tool coverage |
+| Skills | Governance skills count and coverage |
+| Hooks & Safety | Claude settings, PreToolUse safety hooks, PostToolUse formatting |
+| CI/CD | Pipeline presence, secret scanning, security scanning |
+| Security | .env protection, SECURITY.md, MCP config |
+| Code Quality | Linting, type checking, formatting, test framework |
+| Policies | Enterprise policies, scorecard config |
+
+Grades: **A** (90+) → **B** (75+) → **C** (60+) → **D** (40+) → **F** (<40)
+
+Use the audit to assess legacy projects before migration:
+
+```bash
+# Audit a legacy project
+npx forge-ai-init check --dir /path/to/legacy-app
+
+# Then add governance
+npx forge-ai-init --migrate --tier enterprise --dir /path/to/legacy-app
+```
+
 ## Legacy Migration Mode
 
 Use `--migrate` to add governance to existing legacy projects. This mode adds:
