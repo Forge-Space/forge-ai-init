@@ -15,6 +15,7 @@ import { generateSkills } from './generators/skills.js';
 import { generateSettings } from './generators/settings.js';
 import { generateMcpConfig } from './generators/mcp-config.js';
 import { generateWorkflows } from './generators/workflows.js';
+import { generatePolicies } from './generators/policies.js';
 
 function generateRuleFiles(
   dir: string,
@@ -143,6 +144,24 @@ function generateWorkflowFiles(
   }
 }
 
+function generatePolicyFiles(
+  dir: string,
+  stack: DetectedStack,
+  options: GenerateOptions,
+  result: GenerateResult,
+): void {
+  const policies = generatePolicies(stack, options.tier);
+  for (const { path, content } of policies) {
+    writeIfNeeded(
+      join(dir, path),
+      content,
+      options.force,
+      options.dryRun,
+      result,
+    );
+  }
+}
+
 export function generate(
   stack: DetectedStack,
   options: GenerateOptions,
@@ -155,6 +174,7 @@ export function generate(
   generateSkillFiles(dir, stack, options, result);
   generateMcpFile(dir, stack, options, result);
   generateWorkflowFiles(dir, stack, options, result);
+  generatePolicyFiles(dir, stack, options, result);
 
   return result;
 }

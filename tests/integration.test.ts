@@ -196,6 +196,40 @@ describe('integration', () => {
     ).toBe(true);
   });
 
+  it('generates enterprise tier with policies and scorecard', () => {
+    tempDir = createProject({
+      'package.json': JSON.stringify({
+        dependencies: { next: '^15.0.0', react: '^19.0.0' },
+        devDependencies: { typescript: '^5.7.0' },
+        scripts: { build: 'next build', test: 'jest', lint: 'eslint .' },
+      }),
+      'tsconfig.json': '{}',
+    });
+
+    const stack = detectStack(tempDir);
+    const result = generate(stack, {
+      projectDir: tempDir,
+      tier: 'enterprise',
+      tools: ['claude'],
+      force: false,
+      dryRun: false,
+    });
+
+    expect(existsSync(join(tempDir, '.forge', 'policies', 'security.policy.json'))).toBe(true);
+    expect(existsSync(join(tempDir, '.forge', 'policies', 'quality.policy.json'))).toBe(true);
+    expect(existsSync(join(tempDir, '.forge', 'policies', 'compliance.policy.json'))).toBe(true);
+    expect(existsSync(join(tempDir, '.forge', 'policies', 'framework.policy.json'))).toBe(true);
+    expect(existsSync(join(tempDir, '.forge', 'scorecard.json'))).toBe(true);
+    expect(existsSync(join(tempDir, '.forge', 'features.json'))).toBe(true);
+
+    const wfPaths = result.created.filter(f => f.includes('workflows'));
+    expect(wfPaths.some(f => f.includes('scorecard.yml'))).toBe(true);
+    expect(wfPaths.some(f => f.includes('policy-check.yml'))).toBe(true);
+
+    const fw = JSON.parse(readFileSync(join(tempDir, '.forge', 'policies', 'framework.policy.json'), 'utf-8'));
+    expect(fw.rules.some((r: { id: string }) => r.id === 'fw-002')).toBe(true);
+  });
+
   it('generates GitLab CI for gitlab-ci projects', () => {
     tempDir = createProject({
       'package.json': JSON.stringify({

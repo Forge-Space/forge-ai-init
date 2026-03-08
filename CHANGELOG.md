@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0] - 2026-03-08
+
+### Added
+
+- Enterprise policy engine: security, quality, compliance policies (.forge/policies/)
+- Framework-specific policies: a11y (React/Next.js), bundle size (Next.js), API validation (Express/NestJS/FastAPI)
+- Scorecard configuration with framework-aware weights (.forge/scorecard.json)
+- Feature toggles seed file (.forge/features.json)
+- Scorecard and policy-check CI workflows for enterprise tier
+- Compatible with @forgespace/core forge-scorecard and forge-policy CLIs
+- 11 new tests (84 total across 5 suites)
+
 ## [0.2.0] - 2026-03-08
 
 ### Added
