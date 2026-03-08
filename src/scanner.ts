@@ -60,6 +60,7 @@ interface Rule {
   severity: Severity;
   rule: string;
   message: string;
+  extensions?: string[];
 }
 
 const RULES: Rule[] = [
@@ -100,6 +101,7 @@ const RULES: Rule[] = [
     severity: 'high',
     rule: 'ts-suppress',
     message: '@ts-ignore/@ts-nocheck suppresses type safety',
+    extensions: ['.ts', '.tsx'],
   },
   {
     pattern: /readFileSync|writeFileSync|appendFileSync|mkdirSync/g,
@@ -107,6 +109,7 @@ const RULES: Rule[] = [
     severity: 'medium',
     rule: 'sync-io',
     message: 'Synchronous I/O blocks the event loop',
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'],
   },
   {
     pattern: /key\s*=\s*\{?\s*(?:index|i|idx)\s*\}?/g,
@@ -114,6 +117,7 @@ const RULES: Rule[] = [
     severity: 'medium',
     rule: 'index-as-key',
     message: 'Array index as React key causes rendering bugs',
+    extensions: ['.tsx', '.jsx', '.vue', '.svelte'],
   },
   {
     pattern: /dangerouslySetInnerHTML/g,
@@ -121,6 +125,7 @@ const RULES: Rule[] = [
     severity: 'high',
     rule: 'unsafe-html',
     message: 'dangerouslySetInnerHTML — XSS risk',
+    extensions: ['.tsx', '.jsx'],
   },
   {
     pattern: /eval\s*\(/g,
@@ -143,6 +148,7 @@ const RULES: Rule[] = [
     rule: 'promise-constructor-async',
     message:
       'Async function inside Promise constructor — use async/await directly',
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'],
   },
   {
     pattern: /\.then\s*\([\s\S]*?\)\s*\.then\s*\([\s\S]*?\)\s*\.then/g,
@@ -165,6 +171,7 @@ const RULES: Rule[] = [
     severity: 'medium',
     rule: 'fetch-in-useEffect',
     message: 'Fetch in useEffect without cleanup — use a data fetching library',
+    extensions: ['.tsx', '.jsx'],
   },
   {
     pattern:
@@ -173,6 +180,7 @@ const RULES: Rule[] = [
     severity: 'medium',
     rule: 'excessive-useState',
     message: '4+ useState calls — consolidate with useReducer or object state',
+    extensions: ['.tsx', '.jsx'],
   },
   {
     pattern: /:\s*any\b/g,
@@ -180,6 +188,7 @@ const RULES: Rule[] = [
     severity: 'medium',
     rule: 'any-type',
     message: 'Explicit `any` type — use a specific type or `unknown`',
+    extensions: ['.ts', '.tsx'],
   },
   {
     pattern: /as\s+(?!const\b)\w+/g,
@@ -187,6 +196,7 @@ const RULES: Rule[] = [
     severity: 'low',
     rule: 'type-assertion',
     message: 'Type assertion — prefer type narrowing with guards',
+    extensions: ['.ts', '.tsx'],
   },
   {
     pattern: /!\./g,
@@ -194,6 +204,7 @@ const RULES: Rule[] = [
     severity: 'medium',
     rule: 'non-null-assertion',
     message: 'Non-null assertion (!) — handle null case explicitly',
+    extensions: ['.ts', '.tsx'],
   },
   {
     pattern: /innerHTML\s*=/g,
@@ -201,6 +212,7 @@ const RULES: Rule[] = [
     severity: 'high',
     rule: 'innerHTML-assignment',
     message: 'innerHTML assignment — XSS risk, use textContent or sanitize',
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
   {
     pattern: /<img\b[^>]*(?!alt\s*=)[^>]*\/?>/g,
@@ -229,6 +241,7 @@ const RULES: Rule[] = [
     severity: 'medium',
     rule: 'lodash-full-import',
     message: 'Full lodash import — use lodash/specific or lodash-es for tree-shaking',
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs'],
   },
   {
     pattern: /\.forEach\s*\([^)]*=>[^)]*\.push\b/g,
@@ -236,6 +249,7 @@ const RULES: Rule[] = [
     severity: 'low',
     rule: 'forEach-push',
     message: 'forEach + push pattern — use map/filter/reduce instead',
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'],
   },
   {
     pattern:
@@ -245,6 +259,102 @@ const RULES: Rule[] = [
     rule: 'sql-concatenation',
     message:
       'SQL string concatenation — use parameterized queries to prevent injection',
+  },
+  {
+    pattern: /except\s*:/g,
+    category: 'error-handling',
+    severity: 'high',
+    rule: 'bare-except',
+    message: 'Bare except catches all exceptions including SystemExit — catch specific exceptions',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /except\s+Exception\s*(?:as\s+\w+\s*)?:\s*(?:pass|\.\.\.)/g,
+    category: 'error-handling',
+    severity: 'high',
+    rule: 'except-pass',
+    message: 'except Exception: pass silently swallows all errors',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /os\.system\s*\(/g,
+    category: 'security',
+    severity: 'critical',
+    rule: 'os-system',
+    message: 'os.system() — shell injection risk, use subprocess.run with shell=False',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /subprocess\.(?:call|run|Popen)\s*\([^)]*shell\s*=\s*True/g,
+    category: 'security',
+    severity: 'high',
+    rule: 'subprocess-shell',
+    message: 'subprocess with shell=True — shell injection risk',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /from\s+pickle\s+import|import\s+pickle/g,
+    category: 'security',
+    severity: 'high',
+    rule: 'pickle-usage',
+    message: 'pickle deserialization is unsafe with untrusted data — use JSON or msgpack',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /(?:SELECT|INSERT|UPDATE|DELETE|FROM|WHERE).*\.format\s*\(/gi,
+    category: 'security',
+    severity: 'high',
+    rule: 'sql-format-string',
+    message: 'SQL with .format() — use parameterized queries to prevent injection',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /from\s+typing\s+import\s+.*\bAny\b/g,
+    category: 'type-safety',
+    severity: 'medium',
+    rule: 'python-any-type',
+    message: 'typing.Any bypasses type checking — use specific types or Protocol',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /#\s*type:\s*ignore/g,
+    category: 'engineering',
+    severity: 'high',
+    rule: 'type-ignore',
+    message: '# type: ignore suppresses type checking — fix the underlying type issue',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /import\s+\*/g,
+    category: 'engineering',
+    severity: 'medium',
+    rule: 'wildcard-import',
+    message: 'Wildcard import pollutes namespace — import specific names',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /global\s+\w+/g,
+    category: 'architecture',
+    severity: 'medium',
+    rule: 'global-variable',
+    message: 'Global variable mutation — use function parameters or class state',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /def\s+\w+\([^)]*=\s*\[\]|def\s+\w+\([^)]*=\s*\{\}/g,
+    category: 'engineering',
+    severity: 'high',
+    rule: 'mutable-default-arg',
+    message: 'Mutable default argument — use None and create inside function',
+    extensions: ['.py'],
+  },
+  {
+    pattern: /^assert\s+/gm,
+    category: 'engineering',
+    severity: 'medium',
+    rule: 'assert-in-production',
+    message: 'assert is stripped with -O flag — use proper validation for production code',
+    extensions: ['.py'],
   },
 ];
 
@@ -344,11 +454,10 @@ function checkFileSize(
     });
   }
 
-  const fnCount = (
-    content.match(
-      /(?:function\s+\w+|(?:export\s+)?(?:const|let)\s+\w+\s*=\s*(?:async\s*)?\()/g,
-    ) || []
-  ).length;
+  const fnPattern = relPath.endsWith('.py')
+    ? /(?:^|\n)\s*(?:def|async\s+def)\s+\w+/g
+    : /(?:function\s+\w+|(?:export\s+)?(?:const|let)\s+\w+\s*=\s*(?:async\s*)?\()/g;
+  const fnCount = (content.match(fnPattern) || []).length;
   if (fnCount > 15) {
     findings.push({
       file: relPath,
@@ -393,7 +502,11 @@ function scanFile(
 
   findings.push(...checkFileSize(relPath, lines));
 
+  const fileExt = extname(filePath);
+
   for (const rule of RULES) {
+    if (rule.extensions && !rule.extensions.includes(fileExt))
+      continue;
     if (isRuleDisabled(config, rule.rule)) continue;
     if (!isCategoryEnabled(config, rule.category)) continue;
 

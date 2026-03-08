@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.13.0] - 2026-03-08
+
+### Added
+
+- **Python scanner rules** — 12 Python-specific anti-pattern detections (closes #7)
+  - **error-handling** (2): bare `except:` (catches SystemExit), `except Exception: pass` (silent swallow)
+  - **security** (4): `os.system()` (shell injection), `subprocess shell=True`, `pickle` deserialization, SQL `.format()` injection
+  - **type-safety** (2): `typing.Any` import, `# type: ignore` suppression
+  - **engineering** (3): wildcard `import *`, mutable default arguments (`def f(x=[])`), `assert` in production
+  - **architecture** (1): `global` variable mutation
+- **Language-aware rule filtering** — rules with `extensions` field only fire on matching file types
+  - React rules (useEffect, useState, JSX patterns) only on `.tsx`/`.jsx`
+  - TypeScript rules (any, type assertion, non-null) only on `.ts`/`.tsx`
+  - Python rules only on `.py`
+  - Universal rules (secrets, URLs, TODO, SQL injection) fire on all files
+- **Python function counting** — `checkFileSize` now counts `def`/`async def` for Python file sprawl detection
+- 13 new Python scanner tests (272 total across 14 suites)
+
+### Changed
+
+- Scanner rules now have optional `extensions` field for language-scoped matching
+- Scanner from 25 to 37 rules across 10 categories
+
 ## [0.12.0] - 2026-03-08
 
 ### Added
