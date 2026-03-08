@@ -12,21 +12,34 @@ npx forge-ai-init
 
 Interactive wizard detects your stack, asks your preferences, generates governance files. Done.
 
+## The Problem
+
+GitClear's analysis of 211M lines of code shows AI-assisted projects have **60% less refactored code**, **48% more copy-paste patterns**, and **2x code churn**. Ox Security found **10 recurring anti-patterns in 80-100% of AI-generated codebases**.
+
+The result: **AI limbo engineering** — code that "works" but is unmaintainable, insecure, and unscalable.
+
+`forge-ai-init` is the technical conscience your AI tools are missing.
+
 ## What It Generates
 
 ```
 your-project/
-├── CLAUDE.md                          # AI coding rules (Claude Code)
-├── .cursorrules                       # Cursor rules
-├── .windsurfrules                     # Windsurf rules
-├── .github/copilot-instructions.md    # GitHub Copilot rules
+├── CLAUDE.md                          # AI governance rules (Claude Code)
+├── .cursorrules                       # Cursor governance rules
+├── .windsurfrules                     # Windsurf governance rules
+├── .github/copilot-instructions.md    # GitHub Copilot governance rules
 ├── .claude/
 │   ├── settings.json                  # Permission model + hooks
 │   └── skills/
 │       ├── quality-gate/SKILL.md      # Pre-PR quality checks
 │       ├── security-check/SKILL.md    # OWASP + dependency audit
+│       ├── code-conscience/SKILL.md   # AI code discipline enforcer
 │       ├── arch-review/SKILL.md       # Architecture enforcement
-│       └── test-first/SKILL.md        # TDD enforcement
+│       ├── test-first/SKILL.md        # TDD enforcement
+│       ├── dependency-audit/SKILL.md  # Dependency health checks
+│       ├── scalability-review/SKILL.md # Scalability assessment
+│       ├── migration-audit/SKILL.md   # Legacy codebase assessment (--migrate)
+│       └── tech-debt-review/SKILL.md  # Tech debt prioritization (--migrate)
 ├── .mcp.json                          # MCP server configs
 ├── .forge/                            # (enterprise tier)
 │   ├── policies/                      # Security, quality, compliance policies
@@ -38,6 +51,15 @@ your-project/
     ├── scorecard.yml                  # Project scorecard (enterprise)
     └── policy-check.yml               # Policy evaluation (enterprise)
 ```
+
+## AI Governance Rules
+
+Every generated rules file includes governance sections that prevent common AI-driven development anti-patterns:
+
+- **AI Code Governance** — Reject copy-paste patterns, enforce refactoring, require architectural intent, ban speculative features
+- **AI Anti-Patterns to Block** — 10 specific patterns: shallow error handling, dependency bloat, dead code, implicit coupling, missing validation
+- **Scalability & Performance** — Database query patterns, API design, caching, async processing, observability (standard+)
+- **Legacy Migration Governance** — Strangler fig pattern, characterization tests, incremental typing, feature flags (`--migrate`)
 
 ## Stack Detection
 
@@ -54,11 +76,25 @@ Auto-detects your project's language, framework, build tool, package manager, te
 
 ## Governance Tiers
 
-| Tier | For | What's generated |
-|------|-----|------------------|
-| **Lite** | Solo dev, prototypes | Rules + hooks |
-| **Standard** | Teams, production | Rules + skills + MCP + CI |
-| **Enterprise** | Organizations | Standard + policies + scorecard + feature toggles |
+| Tier | For | Skills | What's generated |
+|------|-----|--------|------------------|
+| **Lite** | Solo dev, prototypes | 0 | Rules + hooks |
+| **Standard** | Teams, production | 3 | Rules + skills + MCP + CI |
+| **Enterprise** | Organizations | 7 | Standard + policies + scorecard + feature toggles |
+
+### Skills by Tier
+
+| Skill | Lite | Standard | Enterprise |
+|-------|------|----------|------------|
+| quality-gate | - | ✓ | ✓ |
+| security-check | - | ✓ | ✓ |
+| code-conscience | - | ✓ | ✓ |
+| arch-review | - | - | ✓ |
+| test-first | - | - | ✓ |
+| dependency-audit | - | - | ✓ |
+| scalability-review | - | - | ✓ |
+| migration-audit | - | `--migrate` | `--migrate` |
+| tech-debt-review | - | `--migrate` | `--migrate` |
 
 ## CLI Usage
 
@@ -68,6 +104,9 @@ npx forge-ai-init
 
 # Non-interactive
 npx forge-ai-init --tier standard --tools claude,cursor --yes
+
+# Legacy migration mode
+npx forge-ai-init --migrate --tier enterprise --yes
 
 # Preview without writing
 npx forge-ai-init --dry-run
@@ -86,9 +125,27 @@ npx forge-ai-init --dir /path/to/project
 | `--dir <path>` | Target project directory | `.` |
 | `--tier <level>` | Governance tier: `lite`, `standard`, `enterprise` | `standard` |
 | `--tools <list>` | AI tools: `claude`, `cursor`, `windsurf`, `copilot` | `claude` |
+| `--migrate` | Legacy migration mode (extra rules + skills) | `false` |
 | `--force` | Overwrite existing files | `false` |
 | `--dry-run` | Show what would be created | `false` |
 | `--yes` | Skip interactive prompts | `false` |
+
+## Legacy Migration Mode
+
+Use `--migrate` to add governance to existing legacy projects. This mode adds:
+
+- **Migration governance rules** — Strangler fig pattern, ADRs, incremental typing, backward-compatible APIs, feature flags for migration
+- **migration-audit skill** — Full codebase health assessment: code quality, architecture, tests, security, scalability risks
+- **tech-debt-review skill** — Categorized debt identification with impact/effort scoring matrix
+- **dependency-audit skill** — Security vulnerabilities, outdated packages, license compliance, bundle impact
+
+```bash
+# Add governance to a legacy project
+npx forge-ai-init --migrate --tier standard --yes
+
+# Enterprise migration with full policy engine
+npx forge-ai-init --migrate --tier enterprise --yes
+```
 
 ## AI Tool Support
 
@@ -109,14 +166,6 @@ The enterprise tier generates a `.forge/` directory with policy files compatible
 - **Framework policies** — a11y (React/Next.js), bundle size (Next.js), API validation (Express/NestJS/FastAPI)
 - **Scorecard config** — framework-aware weights for automated project scoring
 - **CI workflows** — `scorecard.yml` and `policy-check.yml` for PR-level enforcement
-
-## Why?
-
-GitClear's analysis of 211M lines of code shows AI-assisted projects have **60% less refactored code**, **48% more copy-paste patterns**, and **2x code churn**. Ox Security found **10 recurring anti-patterns in 80-100% of AI-generated codebases**.
-
-The problem isn't AI coding — it's AI coding **without governance**.
-
-`forge-ai-init` gives your AI tools the rules, skills, and guardrails to produce quality code from the start.
 
 ## License
 

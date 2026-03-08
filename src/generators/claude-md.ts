@@ -7,6 +7,12 @@ import { nodeRules } from '../templates/rules/node.js';
 import { pythonRules } from '../templates/rules/python.js';
 import { vueRules } from '../templates/rules/vue.js';
 import { expressRules } from '../templates/rules/express.js';
+import {
+  aiGovernanceRules,
+  aiAntiPatterns,
+} from '../templates/rules/ai-governance.js';
+import { scalabilityRules } from '../templates/rules/scalability.js';
+import { migrationRules } from '../templates/rules/migration.js';
 
 function quickReference(stack: DetectedStack): string {
   const lines: string[] = ['## Quick Reference', '', '```bash'];
@@ -93,6 +99,7 @@ function enterpriseSection(): string {
 export function generateClaudeMd(
   stack: DetectedStack,
   tier: Tier,
+  migrate?: boolean,
 ): string {
   const sections: string[] = [];
 
@@ -107,11 +114,25 @@ export function generateClaudeMd(
   sections.push('');
   sections.push(commonRules());
   sections.push('');
+  sections.push(aiGovernanceRules());
+  sections.push('');
+  sections.push(aiAntiPatterns());
+  sections.push('');
   sections.push(frameworkRules(stack));
+
+  if (tier === 'standard' || tier === 'enterprise') {
+    sections.push('');
+    sections.push(scalabilityRules());
+  }
 
   if (tier === 'enterprise') {
     sections.push('');
     sections.push(enterpriseSection());
+  }
+
+  if (migrate) {
+    sections.push('');
+    sections.push(migrationRules());
   }
 
   return sections.join('\n') + '\n';
@@ -120,16 +141,31 @@ export function generateClaudeMd(
 export function generateCursorRules(
   stack: DetectedStack,
   tier: Tier,
+  migrate?: boolean,
 ): string {
   const sections: string[] = [];
 
   sections.push(commonRules());
   sections.push('');
+  sections.push(aiGovernanceRules());
+  sections.push('');
+  sections.push(aiAntiPatterns());
+  sections.push('');
   sections.push(frameworkRules(stack));
+
+  if (tier === 'standard' || tier === 'enterprise') {
+    sections.push('');
+    sections.push(scalabilityRules());
+  }
 
   if (tier === 'enterprise') {
     sections.push('');
     sections.push(enterpriseSection());
+  }
+
+  if (migrate) {
+    sections.push('');
+    sections.push(migrationRules());
   }
 
   return sections.join('\n') + '\n';
@@ -138,15 +174,18 @@ export function generateCursorRules(
 export function generateWindsurfRules(
   stack: DetectedStack,
   tier: Tier,
+  migrate?: boolean,
 ): string {
-  return generateCursorRules(stack, tier);
+  return generateCursorRules(stack, tier, migrate);
 }
 
 export function generateCopilotInstructions(
   stack: DetectedStack,
   tier: Tier,
+  migrate?: boolean,
 ): string {
   return (
-    `# Copilot Instructions\n\n` + generateCursorRules(stack, tier)
+    `# Copilot Instructions\n\n` +
+    generateCursorRules(stack, tier, migrate)
   );
 }

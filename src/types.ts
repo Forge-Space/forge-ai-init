@@ -87,6 +87,7 @@ export interface GenerateOptions {
   tools: AITool[];
   force: boolean;
   dryRun: boolean;
+  migrate?: boolean;
 }
 
 export interface GenerateResult {

@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.4.0] - 2026-03-08
+
+### Added
+
+- **AI Code Governance rules**: Anti-patterns detection, copy-paste prevention, refactoring enforcement — included in ALL tiers and ALL tool outputs
+- **AI Anti-Patterns to Block**: 10 specific patterns AI tools generate that degrade codebases (shallow error handling, dependency bloat, dead code, implicit coupling)
+- **Scalability & Performance rules**: Database query patterns, API design, caching strategy, async processing, observability (standard+ tiers)
+- **Legacy Migration mode** (`--migrate`): Extra rules + skills for modernizing existing codebases
+  - Migration governance rules (strangler fig, characterization tests, ADRs, feature flags)
+  - `migration-audit` skill: Comprehensive legacy codebase health assessment
+  - `tech-debt-review` skill: Categorized debt identification with scoring matrix
+  - `dependency-audit` skill: Security, freshness, necessity, license, and bundle impact checks
+- **Code Conscience skill**: Engineering discipline enforcer — 7-point quality checklist for AI-generated code (standard+ tiers)
+- **Scalability Review skill**: Database, API, caching, async, and observability assessment (enterprise tier)
+- Interactive wizard now asks about legacy migration mode
+- CLI `--migrate` flag for non-interactive migration mode
+- 22 new tests (106 total across 6 suites)
+
+### Changed
+
+- All generated rule files now include AI governance sections by default
+- Standard tier skills: 2 → 3 (added code-conscience)
+- Enterprise tier skills: 4 → 7 (added code-conscience, dependency-audit, scalability-review)
+- Migration mode adds up to 3 additional skills (migration-audit, tech-debt-review, dependency-audit)
+
 ## [0.3.0] - 2026-03-08
 
 ### Added

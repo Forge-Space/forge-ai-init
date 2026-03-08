@@ -59,6 +59,7 @@ ${pc.dim('Options:')}
   --dir <path>         Target project directory (default: .)
   --tier <level>       Governance tier: lite, standard, enterprise
   --tools <list>       AI tools: claude,cursor,windsurf,copilot
+  --migrate            Legacy migration mode (extra rules + skills)
   --force              Overwrite existing files
   --dry-run            Show what would be created
   --yes                Skip interactive prompts
@@ -72,6 +73,7 @@ ${pc.dim('Tiers:')}
 ${pc.dim('Examples:')}
   npx forge-ai-init
   npx forge-ai-init --tier standard --tools claude,cursor --yes
+  npx forge-ai-init --migrate --tier enterprise --yes
   npx forge-ai-init --dry-run
   npx forge-ai-init check
 `);
@@ -87,6 +89,7 @@ function parseArgs(
     else if (arg === '--dry-run') opts['dry-run'] = true;
     else if (arg === '--yes' || arg === '-y') opts['yes'] = true;
     else if (arg === '--help' || arg === '-h') opts['help'] = true;
+    else if (arg === '--migrate') opts['migrate'] = true;
     else if (arg === 'check') opts['command'] = 'check';
     else if (arg === 'update') opts['command'] = 'update';
     else if (arg?.startsWith('--') && i + 1 < args.length)
@@ -214,8 +217,21 @@ async function runInteractive(
     process.exit(0);
   }
 
+  const migrate = await p.confirm({
+    message: 'Legacy migration mode? (extra rules + skills for modernizing existing codebases)',
+    initialValue: false,
+  });
+
+  if (p.isCancel(migrate)) {
+    p.cancel('Cancelled.');
+    process.exit(0);
+  }
+
+  const migrateLabel = migrate
+    ? ` + ${pc.yellow('migration')}`
+    : '';
   const confirmed = await p.confirm({
-    message: `Generate ${pc.cyan(tier)} governance for ${pc.cyan(tools.join(', '))}?`,
+    message: `Generate ${pc.cyan(tier)} governance for ${pc.cyan(tools.join(', '))}${migrateLabel}?`,
   });
 
   if (p.isCancel(confirmed) || !confirmed) {
@@ -232,6 +248,7 @@ async function runInteractive(
     tools,
     force,
     dryRun,
+    migrate,
   });
 
   s.stop('Generation complete.');
@@ -239,10 +256,19 @@ async function runInteractive(
   printResult(projectDir, result, dryRun, force);
 
   if (!dryRun && result.created.length > 0) {
-    p.note(
-      '1. Review CLAUDE.md and adjust rules to your conventions\n2. Commit the governance layer to your repo',
-      'Next steps',
-    );
+    const steps = [
+      '1. Review CLAUDE.md and adjust rules to your conventions',
+      '2. Commit the governance layer to your repo',
+    ];
+    if (migrate) {
+      steps.push(
+        '3. Run /migration-audit to assess codebase health',
+      );
+      steps.push(
+        '4. Run /tech-debt-review to prioritize improvements',
+      );
+    }
+    p.note(steps.join('\n'), 'Next steps');
   }
 
   p.outro(pc.green('Your project now has AI governance.'));
@@ -255,6 +281,7 @@ function runNonInteractive(
   tools: AITool[],
   force: boolean,
   dryRun: boolean,
+  migrate: boolean,
 ): void {
   console.log('');
   console.log(
@@ -266,8 +293,11 @@ function runNonInteractive(
   console.log(formatStack(stack));
   console.log('');
 
+  const migrateLabel = migrate
+    ? ` | ${pc.yellow('migration mode')}`
+    : '';
   console.log(
-    `  ${pc.dim('Tier:')} ${pc.cyan(tier)} | ${pc.dim('Tools:')} ${pc.cyan(tools.join(', '))}`,
+    `  ${pc.dim('Tier:')} ${pc.cyan(tier)} | ${pc.dim('Tools:')} ${pc.cyan(tools.join(', '))}${migrateLabel}`,
   );
 
   if (dryRun) {
@@ -282,6 +312,7 @@ function runNonInteractive(
     tools,
     force,
     dryRun,
+    migrate,
   });
 
   printResult(projectDir, result, dryRun, force);
@@ -298,6 +329,14 @@ function runNonInteractive(
     console.log(
       '    2. Commit the governance layer to your repo',
     );
+    if (migrate) {
+      console.log(
+        '    3. Run /migration-audit to assess codebase health',
+      );
+      console.log(
+        '    4. Run /tech-debt-review to prioritize improvements',
+      );
+    }
     console.log('');
   }
 }
@@ -313,7 +352,9 @@ async function main(): Promise<void> {
   const projectDir = resolve((opts['dir'] as string) ?? '.');
   const force = opts['force'] === true;
   const dryRun = opts['dry-run'] === true;
-  const interactive = !opts['yes'] && !opts['tier'] && !opts['tools'];
+  const migrate = opts['migrate'] === true;
+  const interactive =
+    !opts['yes'] && !opts['tier'] && !opts['tools'];
 
   const stack = detectStack(projectDir);
 
@@ -331,8 +372,18 @@ async function main(): Promise<void> {
     await runInteractive(projectDir, stack, force, dryRun);
   } else {
     const tier = parseTier(opts['tier'] as string | undefined);
-    const tools = parseTools(opts['tools'] as string | undefined);
-    runNonInteractive(projectDir, stack, tier, tools, force, dryRun);
+    const tools = parseTools(
+      opts['tools'] as string | undefined,
+    );
+    runNonInteractive(
+      projectDir,
+      stack,
+      tier,
+      tools,
+      force,
+      dryRun,
+      migrate,
+    );
   }
 }
 

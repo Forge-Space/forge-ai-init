@@ -23,12 +23,12 @@ function generateRuleFiles(
   options: GenerateOptions,
   result: GenerateResult,
 ): void {
-  const { tier, tools, force, dryRun } = options;
+  const { tier, tools, force, dryRun, migrate } = options;
 
   if (tools.includes('claude')) {
     writeIfNeeded(
       join(dir, 'CLAUDE.md'),
-      generateClaudeMd(stack, tier),
+      generateClaudeMd(stack, tier, migrate),
       force,
       dryRun,
       result,
@@ -38,7 +38,7 @@ function generateRuleFiles(
   if (tools.includes('cursor')) {
     writeIfNeeded(
       join(dir, '.cursorrules'),
-      generateCursorRules(stack, tier),
+      generateCursorRules(stack, tier, migrate),
       force,
       dryRun,
       result,
@@ -48,7 +48,7 @@ function generateRuleFiles(
   if (tools.includes('windsurf')) {
     writeIfNeeded(
       join(dir, '.windsurfrules'),
-      generateWindsurfRules(stack, tier),
+      generateWindsurfRules(stack, tier, migrate),
       force,
       dryRun,
       result,
@@ -58,7 +58,7 @@ function generateRuleFiles(
   if (tools.includes('copilot')) {
     writeIfNeeded(
       join(dir, '.github', 'copilot-instructions.md'),
-      generateCopilotInstructions(stack, tier),
+      generateCopilotInstructions(stack, tier, migrate),
       force,
       dryRun,
       result,
@@ -74,7 +74,11 @@ function generateSkillFiles(
 ): void {
   if (!options.tools.includes('claude')) return;
 
-  const skills = generateSkills(stack, options.tier);
+  const skills = generateSkills(
+    stack,
+    options.tier,
+    options.migrate,
+  );
   for (const [path, content] of skills) {
     writeIfNeeded(
       join(dir, '.claude', 'skills', path),

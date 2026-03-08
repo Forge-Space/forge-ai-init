@@ -22,17 +22,26 @@ src/
 ├── types.ts            # Shared type definitions
 ├── utils.ts            # File writing utilities
 ├── generators/         # Output generators
-│   ├── claude-md.ts    # CLAUDE.md generator
-│   ├── cursor-rules.ts # .cursorrules generator
+│   ├── claude-md.ts    # CLAUDE.md + .cursorrules + copilot
 │   ├── settings.ts     # .claude/settings.json
 │   ├── skills.ts       # .claude/skills/ generator
 │   ├── mcp-config.ts   # .mcp.json generator
 │   ├── policies.ts     # .forge/policies/
 │   └── workflows.ts    # .github/workflows/
-└── templates/          # Rule and skill content
-    ├── rules/          # Stack-specific rules
-    ├── skills/         # Skill SKILL.md templates
-    └── hooks/          # Hook presets
+└── templates/
+    ├── rules/          # Rule content by concern
+    │   ├── common.ts         # Architecture, security, quality
+    │   ├── ai-governance.ts  # AI anti-patterns, governance
+    │   ├── scalability.ts    # Performance, scaling
+    │   ├── migration.ts      # Legacy migration
+    │   ├── typescript.ts     # TS-specific
+    │   ├── nextjs.ts         # Next.js-specific
+    │   ├── react.ts          # React-specific
+    │   ├── vue.ts            # Vue-specific
+    │   ├── node.ts           # Node.js-specific
+    │   ├── python.ts         # Python-specific
+    │   └── express.ts        # Express-specific
+    └── skills/         # Skill SKILL.md templates (9 total)
 ```
 
 ## Stack

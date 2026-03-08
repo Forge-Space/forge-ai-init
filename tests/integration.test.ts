@@ -230,6 +230,59 @@ describe('integration', () => {
     expect(fw.rules.some((r: { id: string }) => r.id === 'fw-002')).toBe(true);
   });
 
+  it('generates migration mode with extra rules and skills', () => {
+    tempDir = createProject({
+      'package.json': JSON.stringify({
+        dependencies: { express: '^5.0.0' },
+        devDependencies: { typescript: '^5.7.0' },
+        scripts: { build: 'tsc', test: 'jest', lint: 'eslint .' },
+      }),
+      'tsconfig.json': '{}',
+    });
+
+    const stack = detectStack(tempDir);
+    const result = generate(stack, {
+      projectDir: tempDir,
+      tier: 'standard',
+      tools: ['claude'],
+      force: false,
+      dryRun: false,
+      migrate: true,
+    });
+
+    const claudeMd = readFileSync(
+      join(tempDir, 'CLAUDE.md'),
+      'utf-8',
+    );
+    expect(claudeMd).toContain('## AI Code Governance');
+    expect(claudeMd).toContain('## AI Anti-Patterns to Block');
+    expect(claudeMd).toContain('## Scalability & Performance');
+    expect(claudeMd).toContain('## Legacy Migration Governance');
+
+    expect(
+      existsSync(
+        join(tempDir, '.claude', 'skills', 'migration-audit', 'SKILL.md'),
+      ),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(tempDir, '.claude', 'skills', 'tech-debt-review', 'SKILL.md'),
+      ),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(tempDir, '.claude', 'skills', 'code-conscience', 'SKILL.md'),
+      ),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(tempDir, '.claude', 'skills', 'dependency-audit', 'SKILL.md'),
+      ),
+    ).toBe(true);
+
+    expect(result.created.length).toBeGreaterThanOrEqual(10);
+  });
+
   it('generates GitLab CI for gitlab-ci projects', () => {
     tempDir = createProject({
       'package.json': JSON.stringify({
