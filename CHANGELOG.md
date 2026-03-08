@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-03-08
+
+### Added
+
+- **16 benchmark-derived scanner rules** (89→105 pattern rules, 109 total)
+  - **Security** (+10): path traversal (CWE-22), SSRF (CWE-918), prototype
+    pollution, insecure random, JWT decode without verify, dynamic code
+    construction, error info leak, Python requests verify=False, Python
+    tempfile.mktemp, Java Runtime.getRuntime
+  - **Accessibility** (+2): button without label, input without label
+  - **Error Handling** (+1): swallowed promise (empty catch)
+  - **Scalability** (+1): Kotlin GlobalScope.launch
+  - **Security (lang-specific)** (+2): Go math/rand, Python
+    render_template_string (CWE-1336)
+- 17 new tests for benchmark-derived rules including language isolation
+
 ## [0.19.0] - 2026-03-08
 
 ### Added
