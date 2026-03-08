@@ -10,7 +10,7 @@ AI tools generate code fast, but without governance: no architecture patterns, n
 npx forge-ai-init
 ```
 
-Detects your stack, asks your preferences, generates governance files. Done.
+Interactive wizard detects your stack, asks your preferences, generates governance files. Done.
 
 ## What It Generates
 
@@ -28,9 +28,15 @@ your-project/
 │       ├── arch-review/SKILL.md       # Architecture enforcement
 │       └── test-first/SKILL.md        # TDD enforcement
 ├── .mcp.json                          # MCP server configs
+├── .forge/                            # (enterprise tier)
+│   ├── policies/                      # Security, quality, compliance policies
+│   ├── scorecard.json                 # Scorecard configuration
+│   └── features.json                  # Feature toggles seed
 └── .github/workflows/                 # (or .gitlab-ci.yml)
     ├── ci.yml                         # Lint, build, test, audit
-    └── secret-scan.yml                # TruffleHog scanning
+    ├── secret-scan.yml                # TruffleHog scanning
+    ├── scorecard.yml                  # Project scorecard (enterprise)
+    └── policy-check.yml               # Policy evaluation (enterprise)
 ```
 
 ## Stack Detection
@@ -52,7 +58,7 @@ Auto-detects your project's language, framework, build tool, package manager, te
 |------|-----|------------------|
 | **Lite** | Solo dev, prototypes | Rules + hooks |
 | **Standard** | Teams, production | Rules + skills + MCP + CI |
-| **Enterprise** | Organizations | Standard + compliance + ADR templates |
+| **Enterprise** | Organizations | Standard + policies + scorecard + feature toggles |
 
 ## CLI Usage
 
@@ -92,6 +98,17 @@ npx forge-ai-init --dir /path/to/project
 | Cursor | `.cursorrules` |
 | Windsurf | `.windsurfrules` |
 | GitHub Copilot | `.github/copilot-instructions.md` |
+
+## Enterprise Policy Engine
+
+The enterprise tier generates a `.forge/` directory with policy files compatible with [`@forgespace/core`](https://www.npmjs.com/package/@forgespace/core):
+
+- **Security policy** — secret exposure detection, authentication enforcement
+- **Quality policy** — lint checks, test requirements, coverage thresholds
+- **Compliance policy** — audit logging, correlation IDs
+- **Framework policies** — a11y (React/Next.js), bundle size (Next.js), API validation (Express/NestJS/FastAPI)
+- **Scorecard config** — framework-aware weights for automated project scoring
+- **CI workflows** — `scorecard.yml` and `policy-check.yml` for PR-level enforcement
 
 ## Why?
 
