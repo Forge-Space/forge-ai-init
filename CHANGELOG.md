@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-03-08
+
+### Added
+
+- **`plan` command** — Architecture-first project planning & risk analysis
+  - Structure analysis (file counts, test ratio, entry points)
+  - Risk detection (missing CI, type-safety, low tests, security, architecture)
+  - Prioritized recommendations (must/should/could)
+  - ADR suggestions based on stack and monorepo status
+  - Framework-specific scaling strategies (Edge for Next.js, horizontal for Express, ASGI for FastAPI)
+  - 3-phase quality gates (40% foundation → 60% stabilization → 80% production)
+- **`doctor` command** — Continuous architecture health monitoring
+  - 11 health checks across 5 categories (architecture, security, governance, quality, testing)
+  - Trend detection via baseline integration (improving/stable/degrading)
+  - Coupling and complexity scores
+  - CLAUDE.md and ARCHITECTURE.md presence checks
+- **`gate` command** — CI/CD quality gate enforcement
+  - Exit code 0 (pass) / 1 (fail) for CI integration
+  - Auto-detects phase from score (foundation/stabilization/production)
+  - Phase-aware severity blocking (critical always, +high in production)
+  - Reads thresholds from `.forgerc.json` config
+  - `--phase` and `--threshold` overrides
+- **`scaffold` command** — Golden path project templates
+  - 5 templates: nextjs-app, express-api, fastapi-service, ts-library, cli-tool
+  - All templates include `.gitignore`, `CLAUDE.md`, `.forgerc.json` from day one
+  - Template listing with `scaffold` (no flags)
+  - `--json` output for all 4 new commands
+- 60 new tests across 4 suites (378 total across 19 suites)
+
 ## [0.17.0] - 2026-03-08
 
 ### Added

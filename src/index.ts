@@ -18,6 +18,14 @@ import {
   type AssessmentReport,
 } from './assessor.js';
 import { saveBaseline, compareBaseline } from './baseline.js';
+import { generatePlan } from './planner.js';
+import { runDoctor, type HealthCheck } from './doctor.js';
+import { runGate } from './gate.js';
+import {
+  scaffold,
+  TEMPLATE_LIST,
+  type TemplateId,
+} from './scaffold.js';
 import type { AITool, DetectedStack, Tier } from './types.js';
 
 function formatStack(stack: DetectedStack): string {
@@ -72,6 +80,10 @@ ${pc.dim('Usage:')}
   forge-ai-init assess
   forge-ai-init update
   forge-ai-init baseline
+  forge-ai-init plan
+  forge-ai-init doctor
+  forge-ai-init gate
+  forge-ai-init scaffold
 
 ${pc.dim('Commands:')}
   ${pc.cyan('check')}        Audit governance maturity (A-F grade)
@@ -79,6 +91,10 @@ ${pc.dim('Commands:')}
   ${pc.cyan('assess')}       Full migration health assessment (5 categories)
   ${pc.cyan('update')}       Re-generate governance files (auto-detects tier/tools)
   ${pc.cyan('baseline')}     Save score snapshot or compare against previous baseline
+  ${pc.cyan('plan')}         Architecture-first project planning & risk analysis
+  ${pc.cyan('doctor')}       Continuous architecture health monitoring
+  ${pc.cyan('gate')}         CI/CD quality gate enforcement
+  ${pc.cyan('scaffold')}     Create new project from golden path template
 
 ${pc.dim('Options:')}
   --dir <path>         Target project directory (default: .)
@@ -94,6 +110,10 @@ ${pc.dim('Options:')}
   --output <path>      Write report to file (migrate/assess)
   --format <fmt>       Report format: json, markdown, sarif (migrate/assess)
   --compare            Compare current scan against saved baseline
+  --phase <phase>      Quality gate phase: foundation, stabilization, production
+  --threshold <n>      Quality gate minimum score (0-100)
+  --template <id>      Scaffold template: nextjs-app, express-api, etc.
+  --name <name>        Project name (scaffold command)
   --help               Show this help
 
 ${pc.dim('Tiers:')}
@@ -118,6 +138,13 @@ ${pc.dim('Examples:')}
   npx forge-ai-init update --tier enterprise
   npx forge-ai-init baseline
   npx forge-ai-init baseline --compare
+  npx forge-ai-init plan
+  npx forge-ai-init plan --json
+  npx forge-ai-init doctor
+  npx forge-ai-init doctor --json
+  npx forge-ai-init gate
+  npx forge-ai-init gate --phase production --threshold 80
+  npx forge-ai-init scaffold --template nextjs-app --name my-app
 `);
 }
 
@@ -141,6 +168,10 @@ function parseArgs(
     else if (arg === 'update') opts['command'] = 'update';
     else if (arg === 'assess') opts['command'] = 'assess';
     else if (arg === 'baseline') opts['command'] = 'baseline';
+    else if (arg === 'plan') opts['command'] = 'plan';
+    else if (arg === 'doctor') opts['command'] = 'doctor';
+    else if (arg === 'gate') opts['command'] = 'gate';
+    else if (arg === 'scaffold') opts['command'] = 'scaffold';
     else if (arg?.startsWith('--') && i + 1 < args.length)
       opts[arg.slice(2)] = args[++i] ?? '';
   }
@@ -1018,6 +1049,298 @@ function runBaselineCommand(
   console.log('');
 }
 
+function healthIcon(status: HealthCheck['status']): string {
+  switch (status) {
+    case 'pass':
+      return pc.green('✓');
+    case 'fail':
+      return pc.red('✗');
+    case 'warn':
+      return pc.yellow('△');
+  }
+}
+
+function runPlanCommand(
+  projectDir: string,
+  stack: DetectedStack,
+  asJson: boolean,
+): void {
+  const plan = generatePlan(projectDir, stack);
+
+  if (asJson) {
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init plan'))} — Architecture Plan`,
+  );
+  console.log('');
+
+  console.log(
+    `  ${pc.dim('Score:')} ${pc.bold(String(plan.scan.score))}/100 (${gradeColor(plan.scan.grade)})`,
+  );
+  console.log(
+    `  ${pc.dim('Files:')} ${plan.structure.sourceFiles} source, ${plan.structure.testFiles} test (${plan.structure.testRatio}% ratio)`,
+  );
+  console.log(
+    `  ${pc.dim('Entry points:')} ${plan.structure.entryPoints.join(', ') || 'none detected'}`,
+  );
+  console.log('');
+
+  if (plan.risks.length > 0) {
+    console.log(`  ${pc.bold('Risks:')}`);
+    for (const r of plan.risks) {
+      const sev =
+        r.severity === 'critical'
+          ? pc.bgRed(pc.white(` ${r.severity} `))
+          : r.severity === 'high'
+            ? pc.red(r.severity)
+            : r.severity === 'medium'
+              ? pc.yellow(r.severity)
+              : pc.dim(r.severity);
+      console.log(
+        `    ${sev} ${pc.bold(r.area)}: ${r.description}`,
+      );
+      console.log(`      ${pc.dim('→')} ${r.mitigation}`);
+    }
+    console.log('');
+  }
+
+  if (plan.recommendations.length > 0) {
+    console.log(`  ${pc.bold('Recommendations:')}`);
+    for (const rec of plan.recommendations) {
+      const pri =
+        rec.priority === 'must'
+          ? pc.red('[MUST]')
+          : rec.priority === 'should'
+            ? pc.yellow('[SHOULD]')
+            : pc.dim('[COULD]');
+      console.log(`    ${pri} ${rec.title}`);
+      console.log(`      ${pc.dim(rec.description)}`);
+    }
+    console.log('');
+  }
+
+  if (plan.adrs.length > 0) {
+    console.log(`  ${pc.bold('Suggested ADRs:')}`);
+    for (const adr of plan.adrs) {
+      console.log(`    ${pc.cyan(adr.title)}`);
+      console.log(`      ${pc.dim(adr.decision)}`);
+    }
+    console.log('');
+  }
+
+  console.log(`  ${pc.bold('Scaling Strategy:')}`);
+  console.log(`    ${plan.scalingStrategy}`);
+  console.log('');
+
+  console.log(`  ${pc.bold('Quality Gates:')}`);
+  for (const gate of plan.qualityGates) {
+    console.log(
+      `    ${pc.cyan(gate.phase)} (>=${gate.threshold}%)`,
+    );
+    for (const check of gate.checks) {
+      console.log(`      ${pc.dim('•')} ${check}`);
+    }
+  }
+  console.log('');
+}
+
+function runDoctorCommand(
+  projectDir: string,
+  stack: DetectedStack,
+  asJson: boolean,
+): void {
+  const report = runDoctor(projectDir, stack);
+
+  if (asJson) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init doctor'))} — Health Check`,
+  );
+  console.log('');
+
+  console.log(
+    pc.bold(
+      `  Health: ${gradeColor(report.grade)}  Score: ${report.score}/100`,
+    ),
+  );
+  console.log(
+    `  ${pc.dim('Coupling:')} ${report.couplingScore}/100  ${pc.dim('Complexity:')} ${report.complexityScore}/100`,
+  );
+
+  if (report.trend) {
+    const arrow =
+      report.trend.direction === 'improving'
+        ? pc.green('▲')
+        : report.trend.direction === 'degrading'
+          ? pc.red('▼')
+          : pc.dim('→');
+    console.log(
+      `  ${pc.dim('Trend:')} ${arrow} ${report.trend.direction} (${report.trend.snapshots} snapshots)`,
+    );
+  }
+  console.log('');
+
+  const categories = [
+    ...new Set(report.checks.map((c) => c.category)),
+  ];
+  for (const cat of categories) {
+    const catChecks = report.checks.filter(
+      (c) => c.category === cat,
+    );
+    const passCount = catChecks.filter(
+      (c) => c.status === 'pass',
+    ).length;
+    const label = `${passCount}/${catChecks.length}`;
+    const colored =
+      passCount === catChecks.length
+        ? pc.green(label)
+        : passCount === 0
+          ? pc.red(label)
+          : pc.yellow(label);
+    console.log(
+      `  ${pc.bold(cat)} ${pc.dim('─'.repeat(22 - cat.length))} ${colored}`,
+    );
+    for (const check of catChecks) {
+      console.log(
+        `    ${healthIcon(check.status)} ${check.name}: ${pc.dim(check.message)}`,
+      );
+    }
+    console.log('');
+  }
+}
+
+function runGateCommand(
+  projectDir: string,
+  phase?: string,
+  threshold?: number,
+  asJson?: boolean,
+): void {
+  const result = runGate(projectDir, phase, threshold);
+
+  if (asJson) {
+    console.log(JSON.stringify(result, null, 2));
+    process.exitCode = result.passed ? 0 : 1;
+    return;
+  }
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init gate'))} — Quality Gate`,
+  );
+  console.log('');
+
+  const passLabel = result.passed
+    ? pc.green(pc.bold('PASSED'))
+    : pc.red(pc.bold('FAILED'));
+
+  console.log(`  ${passLabel}`);
+  console.log(
+    `  ${pc.dim('Score:')} ${result.score}/100  ${pc.dim('Threshold:')} ${result.threshold}  ${pc.dim('Phase:')} ${result.phase}`,
+  );
+  console.log(
+    `  ${pc.dim('Grade:')} ${gradeColor(result.grade)}`,
+  );
+  console.log('');
+
+  if (result.violations.length > 0) {
+    console.log(`  ${pc.bold('Blocking violations:')}`);
+    for (const v of result.violations) {
+      console.log(
+        `    ${pc.red('✗')} ${v.rule} (${severityColor(v.severity)}) × ${v.count}`,
+      );
+    }
+    console.log('');
+  }
+
+  console.log(`  ${result.summary}`);
+  console.log('');
+
+  process.exitCode = result.passed ? 0 : 1;
+}
+
+function runScaffoldCommand(
+  dir: string,
+  template?: string,
+  name?: string,
+  asJson?: boolean,
+): void {
+  if (!template) {
+    console.log('');
+    console.log(
+      `  ${pc.bold(pc.magenta('forge-ai-init scaffold'))} — Golden Path Templates`,
+    );
+    console.log('');
+    console.log(`  ${pc.bold('Available templates:')}`);
+    for (const t of TEMPLATE_LIST) {
+      console.log(
+        `    ${pc.cyan(t.id.padEnd(20))} ${pc.dim(t.description)}`,
+      );
+    }
+    console.log('');
+    console.log(
+      `  ${pc.dim('Usage:')} forge-ai-init scaffold --template <id> --name <project-name>`,
+    );
+    console.log('');
+    return;
+  }
+
+  if (!name) {
+    console.error(
+      pc.red('  Missing --name flag. Usage: forge-ai-init scaffold --template <id> --name <name>'),
+    );
+    process.exit(1);
+  }
+
+  const validIds = TEMPLATE_LIST.map((t) => t.id);
+  if (!validIds.includes(template as TemplateId)) {
+    console.error(
+      pc.red(`  Unknown template: ${template}. Valid: ${validIds.join(', ')}`),
+    );
+    process.exit(1);
+  }
+
+  const result = scaffold({
+    template: template as TemplateId,
+    name,
+    dir,
+  });
+
+  if (asJson) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init scaffold'))} — Project Created`,
+  );
+  console.log('');
+  console.log(
+    `  ${pc.dim('Template:')} ${pc.cyan(result.template)}`,
+  );
+  console.log(
+    `  ${pc.dim('Location:')} ${result.projectDir}`,
+  );
+  console.log('');
+  console.log(`  ${pc.bold('Created files:')}`);
+  for (const f of result.created) {
+    console.log(`    ${pc.green('+')} ${f}`);
+  }
+  console.log('');
+  console.log(
+    `  ${pc.dim('Next:')} cd ${name} && npm install`,
+  );
+  console.log('');
+}
+
 async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
 
@@ -1073,6 +1396,39 @@ async function main(): Promise<void> {
 
   if (opts['command'] === 'baseline') {
     runBaselineCommand(projectDir, opts['compare'] === true);
+    return;
+  }
+
+  if (opts['command'] === 'plan') {
+    runPlanCommand(projectDir, stack, opts['json'] === true);
+    return;
+  }
+
+  if (opts['command'] === 'doctor') {
+    runDoctorCommand(projectDir, stack, opts['json'] === true);
+    return;
+  }
+
+  if (opts['command'] === 'gate') {
+    const thresholdVal = opts['threshold']
+      ? Number(opts['threshold'])
+      : undefined;
+    runGateCommand(
+      projectDir,
+      opts['phase'] as string | undefined,
+      thresholdVal,
+      opts['json'] === true,
+    );
+    return;
+  }
+
+  if (opts['command'] === 'scaffold') {
+    runScaffoldCommand(
+      projectDir,
+      opts['template'] as string | undefined,
+      opts['name'] as string | undefined,
+      opts['json'] === true,
+    );
     return;
   }
 

@@ -142,6 +142,18 @@ npx forge-ai-init baseline
 
 # Compare current scan against saved baseline
 npx forge-ai-init baseline --compare
+
+# Architecture planning with risk analysis
+npx forge-ai-init plan
+
+# Continuous health monitoring
+npx forge-ai-init doctor
+
+# CI quality gate enforcement (exit code 0/1)
+npx forge-ai-init gate --phase production --threshold 80
+
+# Create project from golden path template
+npx forge-ai-init scaffold --template nextjs-app --name my-app
 ```
 
 ### Options
@@ -158,6 +170,10 @@ npx forge-ai-init baseline --compare
 | `--staged`       | Scan only git-staged files (migrate command)        | `false`    |
 | `--watch`        | Watch for changes and re-scan (migrate command)     | `false`    |
 | `--compare`      | Compare against saved baseline (baseline command)   | `false`    |
+| `--phase <p>`    | Quality gate phase: foundation, stabilization, production | auto     |
+| `--threshold <n>`| Quality gate minimum score (0-100)                  | from config|
+| `--template <id>`| Scaffold template ID                                | -          |
+| `--name <name>`  | Project name (scaffold command)                     | -          |
 
 ## Update Governance Files
 
@@ -382,6 +398,98 @@ npx forge-ai-init baseline --compare
 ```
 
 Baselines are stored in `.forge/baseline.json` as a history array — each `baseline` call appends a new snapshot for trend tracking.
+
+## Architecture Planning
+
+Run `plan` to generate an architecture-first analysis of any project:
+
+```bash
+npx forge-ai-init plan
+npx forge-ai-init plan --json
+```
+
+Analyzes project structure, detects risks, generates recommendations, suggests ADRs, and defines quality gates:
+
+- **Structure analysis** — file counts, test ratio, entry points, top-level directories
+- **Risk detection** — missing CI, no type checking, low test ratio, security findings, architecture issues
+- **Recommendations** — prioritized as must/should/could with specific actions
+- **ADR suggestions** — architecture style, testing strategy, monorepo strategy
+- **Scaling strategy** — framework-specific guidance (Edge-first for Next.js, horizontal for Express, ASGI for FastAPI)
+- **Quality gates** — 3-phase progressive enforcement (40% foundation → 60% stabilization → 80% production)
+
+## Health Monitoring
+
+Run `doctor` for continuous architecture health checks:
+
+```bash
+npx forge-ai-init doctor
+npx forge-ai-init doctor --json
+```
+
+11 health checks across 5 categories:
+
+| Category     | Checks                                              |
+| ------------ | --------------------------------------------------- |
+| Architecture | God files, function sprawl                          |
+| Security     | Critical findings, security vulnerabilities          |
+| Governance   | CI/CD, linting, type checking, CLAUDE.md, ARCH.md   |
+| Quality      | Score threshold, error handling patterns             |
+
+Integrates with baseline tracking for trend detection (improving/stable/degrading). Calculates coupling and complexity scores.
+
+## Quality Gate
+
+Run `gate` to enforce quality thresholds in CI/CD:
+
+```bash
+# Auto-detect phase and threshold
+npx forge-ai-init gate
+
+# Explicit phase and threshold
+npx forge-ai-init gate --phase production --threshold 80
+
+# Machine-readable for CI
+npx forge-ai-init gate --json
+```
+
+Exit code 0 = passed, 1 = failed. Phase auto-detection from score: foundation (<60), stabilization (60-80), production (80+).
+
+Blocking rules per phase:
+- **Foundation/Stabilization** — blocks on critical severity findings
+- **Production** — blocks on critical AND high severity findings
+
+Reads thresholds from `.forgerc.json` deploy threshold. Use in CI:
+
+```yaml
+- name: Quality gate
+  run: npx forge-ai-init gate --phase production --threshold 80
+```
+
+## Golden Path Templates
+
+Run `scaffold` to create new projects from opinionated templates with governance built in:
+
+```bash
+# List available templates
+npx forge-ai-init scaffold
+
+# Create a project
+npx forge-ai-init scaffold --template nextjs-app --name my-app
+npx forge-ai-init scaffold --template express-api --name my-api
+npx forge-ai-init scaffold --template fastapi-service --name my-svc
+npx forge-ai-init scaffold --template ts-library --name my-lib
+npx forge-ai-init scaffold --template cli-tool --name my-cli
+```
+
+Every template includes `.gitignore`, `CLAUDE.md`, and `.forgerc.json` from day one. No governance debt.
+
+| Template          | Description                         | Includes                            |
+| ----------------- | ----------------------------------- | ----------------------------------- |
+| `nextjs-app`      | Next.js App Router with TypeScript  | React 19, ESLint, Jest, tsconfig    |
+| `express-api`     | Express API with Zod validation     | Express 5, Zod, tsx, tsup           |
+| `fastapi-service` | FastAPI service with pytest         | FastAPI, uvicorn, ruff, mypy        |
+| `ts-library`      | TypeScript library with tsup        | tsup, Jest, ESM                     |
+| `cli-tool`        | CLI tool with @clack/prompts        | @clack/prompts, picocolors, tsx     |
 
 ## Legacy Migration Mode
 
