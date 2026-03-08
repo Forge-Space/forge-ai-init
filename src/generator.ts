@@ -17,6 +17,7 @@ import { generateMcpConfig } from './generators/mcp-config.js';
 import { generateWorkflows } from './generators/workflows.js';
 import { generatePolicies } from './generators/policies.js';
 import { generateMigrationFiles } from './generators/migration.js';
+import { generateConfigFile } from './generators/config-scaffold.js';
 
 function generateRuleFiles(
   dir: string,
@@ -205,6 +206,14 @@ export function generate(
   generateWorkflowFiles(dir, stack, options, result);
   generatePolicyFiles(dir, stack, options, result);
   generateMigrationDocs(dir, stack, options, result);
+
+  writeIfNeeded(
+    join(dir, '.forgerc.json'),
+    generateConfigFile(options.tier),
+    options.force,
+    options.dryRun,
+    result,
+  );
 
   return result;
 }

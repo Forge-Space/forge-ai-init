@@ -1,5 +1,13 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
+import {
+  loadConfig,
+  isRuleDisabled,
+  getRuleSeverity,
+  isCategoryEnabled,
+  isFileIgnored,
+  type ForgeConfig,
+} from './config.js';
 
 export type Severity = 'critical' | 'high' | 'medium' | 'low';
 
@@ -367,6 +375,7 @@ function checkFileSize(
 function scanFile(
   filePath: string,
   base: string,
+  config: ForgeConfig,
 ): Finding[] {
   let content: string;
   try {
@@ -376,12 +385,24 @@ function scanFile(
   }
 
   const relPath = relative(base, filePath);
+
+  if (isFileIgnored(config, relPath)) return [];
+
   const lines = content.split('\n');
   const findings: Finding[] = [];
 
   findings.push(...checkFileSize(relPath, lines));
 
   for (const rule of RULES) {
+    if (isRuleDisabled(config, rule.rule)) continue;
+    if (!isCategoryEnabled(config, rule.category)) continue;
+
+    const severity = getRuleSeverity(
+      config,
+      rule.rule,
+      rule.severity,
+    );
+
     const regex = new RegExp(
       rule.pattern.source,
       rule.pattern.flags,
@@ -394,7 +415,7 @@ function scanFile(
         file: relPath,
         line,
         category: rule.category,
-        severity: rule.severity,
+        severity,
         rule: rule.rule,
         message: rule.message,
       });
@@ -432,11 +453,13 @@ export function scanProject(
   dir: string,
   maxFiles = 500,
 ): ScanReport {
-  const files = walkFiles(dir, maxFiles);
+  const config = loadConfig(dir);
+  const limit = config.maxFiles ?? maxFiles;
+  const files = walkFiles(dir, limit);
   const allFindings: Finding[] = [];
 
   for (const file of files) {
-    allFindings.push(...scanFile(file, dir));
+    allFindings.push(...scanFile(file, dir, config));
   }
 
   allFindings.sort((a, b) => {

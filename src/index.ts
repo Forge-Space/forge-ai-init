@@ -6,6 +6,7 @@ import { generate } from './generator.js';
 import { runAudit, type CheckStatus } from './checker.js';
 import { scanProject, type Severity } from './scanner.js';
 import { updateProject } from './updater.js';
+import { writeReport, type ReportFormat } from './reporter.js';
 import type { AITool, DetectedStack, Tier } from './types.js';
 
 function formatStack(stack: DetectedStack): string {
@@ -348,8 +349,19 @@ function runUpdateCommand(
 function runScanCommand(
   projectDir: string,
   asJson: boolean,
+  outputPath?: string,
+  format?: string,
 ): void {
   const report = scanProject(projectDir);
+
+  if (outputPath) {
+    const fmt = (format ?? 'json') as ReportFormat;
+    writeReport(report, fmt, outputPath);
+    console.log(
+      `  ${pc.green('✓')} Report written to ${outputPath} (${fmt})`,
+    );
+    return;
+  }
 
   if (asJson) {
     console.log(JSON.stringify(report, null, 2));
@@ -664,7 +676,12 @@ async function main(): Promise<void> {
   }
 
   if (opts['command'] === 'migrate') {
-    runScanCommand(projectDir, opts['json'] === true);
+    runScanCommand(
+      projectDir,
+      opts['json'] === true,
+      opts['output'] as string | undefined,
+      opts['format'] as string | undefined,
+    );
     return;
   }
 

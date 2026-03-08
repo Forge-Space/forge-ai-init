@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.11.0] - 2026-03-08
+
+### Added
+
+- **Config-based rule customization** (`.forgerc.json`) — project-level governance configuration
+  - 3 presets: `strict` (80/85/90 thresholds), `recommended` (60/70/80), `lenient` (40/50/60 + relaxed rules)
+  - Per-rule overrides: disable rules (`false`) or change severity (`{ severity: 'low' }`)
+  - Category toggles: enable/disable entire finding categories
+  - File ignore patterns: prefix and wildcard matching
+  - `maxFiles` override for large codebases
+  - Supports 3 config filenames: `.forgerc.json`, `.forgerc`, `forge.config.json`
+- **Report export** — multi-format scan output for CI/CD integration
+  - JSON format: machine-readable full report
+  - Markdown format: human-readable tables with category summary, top files, critical findings
+  - SARIF format: GitHub Security tab compatible (SARIF 2.1.0)
+  - `--output <path>` flag to write report to file
+  - `--format <json|markdown|sarif>` flag to select output format
+- **Config scaffold** — `generate` now creates `.forgerc.json` with tier-appropriate preset
+  - Enterprise → `strict`, Standard → `recommended`, Lite → `lenient`
+  - Includes default ignore patterns and maxFiles
+- 28 config tests + 20 reporter tests (260 total across 14 suites)
+
+### Changed
+
+- Scanner now loads `.forgerc.json` and respects all config overrides (disabled rules, severity changes, category toggles, file ignoring)
+- CLI `migrate` command now supports `--output` and `--format` flags
+
 ## [0.10.0] - 2026-03-08
 
 ### Added
