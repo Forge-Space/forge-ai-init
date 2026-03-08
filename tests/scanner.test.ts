@@ -1,7 +1,10 @@
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { scanProject } from '../src/scanner.js';
+import {
+  scanProject,
+  scanSpecificFiles,
+} from '../src/scanner.js';
 
 function makeTempDir(): string {
   const dir = join(tmpdir(), `forge-scan-${Date.now()}`);
@@ -483,5 +486,61 @@ const token = "secret12345678";
     const report = scanProject(dir);
     const finding = report.findings.find(f => f.rule === 'go-panic');
     expect(finding).toBeUndefined();
+  });
+});
+
+describe('scanSpecificFiles', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = makeTempDir();
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('scans only specified files', () => {
+    writeFile(dir, 'src/clean.ts', 'const x = 1;\n');
+    writeFile(dir, 'src/dirty.ts', 'try { x() } catch (e) {}\n');
+    const report = scanSpecificFiles(dir, ['src/dirty.ts']);
+    expect(report.filesScanned).toBe(1);
+    expect(report.findings.length).toBeGreaterThan(0);
+    expect(report.findings[0].rule).toBe('empty-catch');
+  });
+
+  it('returns empty report for no files', () => {
+    const report = scanSpecificFiles(dir, []);
+    expect(report.filesScanned).toBe(0);
+    expect(report.findings).toHaveLength(0);
+    expect(report.grade).toBe('A');
+  });
+
+  it('filters non-code files', () => {
+    writeFile(dir, 'README.md', '# Hello\n');
+    writeFile(dir, 'src/app.ts', 'try { x() } catch (e) {}\n');
+    const report = scanSpecificFiles(
+      dir,
+      ['README.md', 'src/app.ts'],
+    );
+    expect(report.filesScanned).toBe(1);
+  });
+
+  it('handles missing files gracefully', () => {
+    const report = scanSpecificFiles(
+      dir,
+      ['nonexistent.ts'],
+    );
+    expect(report.filesScanned).toBe(1);
+    expect(report.findings).toHaveLength(0);
+  });
+
+  it('applies language-aware rules to specific files', () => {
+    writeFile(dir, 'src/main.go', 'func main() {\n\tpanic("oops")\n}\n');
+    const report = scanSpecificFiles(dir, ['src/main.go']);
+    const finding = report.findings.find(
+      f => f.rule === 'go-panic',
+    );
+    expect(finding).toBeDefined();
   });
 });

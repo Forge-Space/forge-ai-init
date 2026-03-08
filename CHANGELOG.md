@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.15.0] - 2026-03-08
+
+### Added
+
+- **Watch mode** (`--watch`) — continuous file monitoring with debounced re-scans
+  - Watches for code file changes in project directory (recursive)
+  - 300ms debounce to batch rapid saves
+  - Compact single-line output per scan with grade, score, and finding count
+  - Shows top 3 findings per scan cycle
+- **Staged-only scanning** (`--staged`) — scan only git-staged files
+  - Uses `git diff --cached --name-only` to get staged file list
+  - Fast pre-commit scanning — only checks files about to be committed
+  - Works with `--json`, `--output`, and `--format` flags
+- `scanSpecificFiles()` export — scan an explicit file list (used by --staged)
+- Internal refactor: extracted `buildReport()` from `scanProject()` for reuse
+
 ## [0.14.0] - 2026-03-08
 
 ### Added

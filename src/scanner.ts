@@ -695,19 +695,10 @@ function gradeFromScore(
   return 'F';
 }
 
-export function scanProject(
-  dir: string,
-  maxFiles = 500,
+function buildReport(
+  allFindings: Finding[],
+  filesScanned: number,
 ): ScanReport {
-  const config = loadConfig(dir);
-  const limit = config.maxFiles ?? maxFiles;
-  const files = walkFiles(dir, limit);
-  const allFindings: Finding[] = [];
-
-  for (const file of files) {
-    allFindings.push(...scanFile(file, dir, config));
-  }
-
   allFindings.sort((a, b) => {
     const order: Record<Severity, number> = {
       critical: 0,
@@ -777,10 +768,44 @@ export function scanProject(
 
   return {
     findings: allFindings,
-    filesScanned: files.length,
+    filesScanned,
     score,
     grade: gradeFromScore(score),
     summary,
     topFiles,
   };
+}
+
+export function scanSpecificFiles(
+  dir: string,
+  filePaths: string[],
+): ScanReport {
+  const config = loadConfig(dir);
+  const files = filePaths.filter(
+    (f) => CODE_EXTENSIONS.has(extname(f)),
+  );
+  const allFindings: Finding[] = [];
+
+  for (const file of files) {
+    const full = join(dir, file);
+    allFindings.push(...scanFile(full, dir, config));
+  }
+
+  return buildReport(allFindings, files.length);
+}
+
+export function scanProject(
+  dir: string,
+  maxFiles = 500,
+): ScanReport {
+  const config = loadConfig(dir);
+  const limit = config.maxFiles ?? maxFiles;
+  const files = walkFiles(dir, limit);
+  const allFindings: Finding[] = [];
+
+  for (const file of files) {
+    allFindings.push(...scanFile(file, dir, config));
+  }
+
+  return buildReport(allFindings, files.length);
 }
