@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: forge-ai-init
+  description: AI Governance Layer CLI — scaffolds coding rules, skills, hooks, and quality gates onto any project
+  tags:
+    - typescript
+    - cli
+    - governance
+    - npm
+spec:
+  owner: forge-space
+  system: siza
+  lifecycle: production
+  type: library
+  dependsOn: []

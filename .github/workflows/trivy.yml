@@ -1,0 +1,17 @@
+name: Trivy Security Scan
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy:
+    uses: Forge-Space/.github/.github/workflows/reusable-trivy.yml@main
+    permissions:
+      contents: read
+      security-events: write
