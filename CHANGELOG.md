@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-03-08
+
 ### Added
 
 - **Java scanner rules** — 8 Java-specific anti-pattern detections (closes #13)
