@@ -992,3 +992,152 @@ describe('Python expansion rules', () => {
     expect(finding!.category).toBe('scalability');
   });
 });
+
+describe('Benchmark-derived rules (Phase 1)', () => {
+  let dir: string;
+  beforeEach(() => { dir = makeTempDir(); });
+  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+
+  it('detects path traversal risk', () => {
+    writeFile(dir, 'src/files.ts', 'const data = readFileSync(req.params.path);\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'path-traversal');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects SSRF risk', () => {
+    writeFile(dir, 'src/proxy.ts', 'const resp = await fetch(req.query.url);\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'ssrf-risk');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects prototype pollution via __proto__', () => {
+    writeFile(dir, 'src/merge.ts', 'if (obj.__proto__) { delete obj.__proto__; }\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'prototype-pollution');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+  });
+
+  it('detects insecure Math.random()', () => {
+    writeFile(dir, 'src/token.ts', 'const id = Math.random().toString(36);\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'insecure-random');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects jwt.decode without verify', () => {
+    writeFile(dir, 'src/auth.ts', 'const payload = jwt.decode(token);\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'jwt-no-verify');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects new Function() constructor', () => {
+    writeFile(dir, 'src/eval.ts', 'const fn = new Function("return " + expr);\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'new-function');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+  });
+
+  it('detects swallowed promise catch', () => {
+    writeFile(dir, 'src/api.ts', 'fetchData().catch(() => {});\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'swallowed-promise');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('error-handling');
+  });
+
+  it('detects error info leak in response', () => {
+    writeFile(dir, 'src/handler.ts', 'res.json({ error: err.stack });\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'error-info-leak');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects icon-only button without aria-label', () => {
+    writeFile(dir, 'src/Button.tsx', '<button className="icon-btn"> <svg viewBox="0 0 24 24" /></button>\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'button-no-label');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('accessibility');
+  });
+
+  it('detects input without label', () => {
+    writeFile(dir, 'src/Form.tsx', '<input type="text" placeholder="Search" />\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'input-no-label');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('accessibility');
+  });
+
+  it('detects Python requests with verify=False', () => {
+    writeFile(dir, 'src/client.py', 'resp = requests.get(url, verify=False)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-requests-no-verify');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects Python tempfile.mktemp()', () => {
+    writeFile(dir, 'src/tmp.py', 'path = tempfile.mktemp()\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-tempfile-insecure');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects Java Runtime.exec()', () => {
+    writeFile(dir, 'src/Cmd.java', 'Runtime.getRuntime().exec(cmd);\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'java-runtime-exec');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+  });
+
+  it('detects Kotlin GlobalScope.launch', () => {
+    writeFile(dir, 'src/App.kt', 'GlobalScope.launch {\n  doWork()\n}\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'kotlin-global-scope');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('scalability');
+  });
+
+  it('detects Go math/rand for crypto', () => {
+    writeFile(dir, 'src/token.go', 'import "math/rand"\nfunc genToken() string {\n  return fmt.Sprintf("%d", rand.Int())\n}\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-insecure-rand');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects Python render_template_string (SSTI)', () => {
+    writeFile(dir, 'src/views.py', 'return render_template_string(user_input)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-template-injection');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('does not fire JS security rules on Python files', () => {
+    writeFile(dir, 'src/app.py', 'jwt.decode(token)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'jwt-no-verify');
+    expect(finding).toBeUndefined();
+  });
+});
