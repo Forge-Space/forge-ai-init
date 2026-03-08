@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Java scanner rules** — 8 Java-specific anti-pattern detections (closes #13)
+  - System.out.println (use logging framework), raw JDBC Statement (SQL injection), @SuppressWarnings
+  - Thread.sleep (use async), hardcoded credentials, legacy Date/SimpleDateFormat, empty catch, printStackTrace
+- **Kotlin scanner rules** — 5 Kotlin-specific anti-pattern detections (closes #13)
+  - `!!` non-null assertion, runBlocking in production, empty catch, @Suppress, TODO markers
+- **Java/Kotlin function counting** for architecture sprawl detection
+- `.kt`/`.kts` added to scanned file extensions
+- 16 new Java/Kotlin scanner tests (318 total across 15 suites)
+
+### Changed
+
+- Scanner from 53 to 66 regex rules across 10 categories
+
 ## [0.16.0] - 2026-03-08
 
 ### Added

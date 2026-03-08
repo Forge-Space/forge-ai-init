@@ -544,3 +544,188 @@ describe('scanSpecificFiles', () => {
     expect(finding).toBeDefined();
   });
 });
+
+describe('Java scanner rules', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = makeTempDir();
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('detects System.out.println', () => {
+    writeFile(dir, 'src/App.java', 'System.out.println("debug");\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'java-sysout');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+  });
+
+  it('detects raw JDBC Statement', () => {
+    writeFile(
+      dir,
+      'src/Dao.java',
+      'Statement stmt = conn.createStatement();\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'java-raw-statement');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+  });
+
+  it('detects @SuppressWarnings', () => {
+    writeFile(
+      dir,
+      'src/App.java',
+      '@SuppressWarnings("unchecked")\npublic void foo() {}\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'java-suppress-warnings',
+    );
+    expect(finding).toBeDefined();
+  });
+
+  it('detects Thread.sleep', () => {
+    writeFile(dir, 'src/App.java', 'Thread.sleep(1000);\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'java-thread-sleep');
+    expect(finding).toBeDefined();
+  });
+
+  it('detects hardcoded credentials', () => {
+    writeFile(
+      dir,
+      'src/Config.java',
+      'String password = "hunter2";\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'java-hardcoded-credential',
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+  });
+
+  it('detects legacy Date usage', () => {
+    writeFile(dir, 'src/App.java', 'Date now = new Date();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'java-legacy-date');
+    expect(finding).toBeDefined();
+  });
+
+  it('detects empty catch blocks', () => {
+    writeFile(
+      dir,
+      'src/App.java',
+      'try { foo(); } catch (Exception e) {}\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'java-empty-catch');
+    expect(finding).toBeDefined();
+  });
+
+  it('detects printStackTrace', () => {
+    writeFile(
+      dir,
+      'src/App.java',
+      'catch (Exception e) { e.printStackTrace(); }\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'java-print-stacktrace',
+    );
+    expect(finding).toBeDefined();
+  });
+
+  it('does not fire Java rules on .ts files', () => {
+    writeFile(dir, 'src/app.ts', 'System.out.println("test");\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'java-sysout');
+    expect(finding).toBeUndefined();
+  });
+});
+
+describe('Kotlin scanner rules', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = makeTempDir();
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('detects !! non-null assertion', () => {
+    writeFile(dir, 'src/App.kt', 'val name = user!!.name\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'kotlin-non-null-assertion',
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects runBlocking', () => {
+    writeFile(dir, 'src/App.kt', 'runBlocking {\n  doWork()\n}\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'kotlin-run-blocking',
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects empty catch blocks', () => {
+    writeFile(
+      dir,
+      'src/App.kt',
+      'try { foo() } catch (e: Exception) {}\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'kotlin-empty-catch',
+    );
+    expect(finding).toBeDefined();
+  });
+
+  it('detects @Suppress annotation', () => {
+    writeFile(
+      dir,
+      'src/App.kt',
+      '@Suppress("UNCHECKED_CAST")\nfun foo() {}\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'kotlin-suppress');
+    expect(finding).toBeDefined();
+  });
+
+  it('detects TODO markers', () => {
+    writeFile(dir, 'src/App.kt', 'TODO("implement this")\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'kotlin-todo');
+    expect(finding).toBeDefined();
+  });
+
+  it('scans .kts files', () => {
+    writeFile(dir, 'build.gradle.kts', 'runBlocking {\n  task()\n}\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'kotlin-run-blocking',
+    );
+    expect(finding).toBeDefined();
+  });
+
+  it('does not fire Kotlin rules on .java files', () => {
+    writeFile(dir, 'src/App.java', 'val name = user!!.name\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'kotlin-non-null-assertion',
+    );
+    expect(finding).toBeUndefined();
+  });
+});
