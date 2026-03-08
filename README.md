@@ -607,7 +607,35 @@ The enterprise tier generates a `.forge/` directory with policy files compatible
 
 ## CI/CD Integration
 
-### GitHub Actions
+### GitHub Action (Recommended)
+
+The easiest way to add quality gates to your CI:
+
+```yaml
+name: Quality Gate
+on: [pull_request]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  forge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: Forge-Space/forge-ai-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          threshold: 75
+```
+
+Posts a quality report on every PR with score, delta, findings, and inline annotations. See [forge-ai-action](https://github.com/Forge-Space/forge-ai-action) for full docs.
+
+### GitHub Actions (Manual)
 
 #### Quality Gate on Pull Requests
 
