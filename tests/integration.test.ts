@@ -280,7 +280,30 @@ describe('integration', () => {
       ),
     ).toBe(true);
 
-    expect(result.created.length).toBeGreaterThanOrEqual(10);
+    expect(
+      existsSync(join(tempDir, 'MIGRATION.md')),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(tempDir, 'docs', 'adr', 'ADR-0001-migration-strategy.md'),
+      ),
+    ).toBe(true);
+
+    const migration = readFileSync(
+      join(tempDir, 'MIGRATION.md'),
+      'utf-8',
+    );
+    expect(migration).toContain('Strangler Fig');
+    expect(migration).toContain('Assessment');
+
+    const adr = readFileSync(
+      join(tempDir, 'docs', 'adr', 'ADR-0001-migration-strategy.md'),
+      'utf-8',
+    );
+    expect(adr).toContain('strangler fig');
+    expect(adr).toContain('express');
+
+    expect(result.created.length).toBeGreaterThanOrEqual(12);
   });
 
   it('generates GitLab CI for gitlab-ci projects', () => {

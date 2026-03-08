@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0] - 2026-03-08
+
+### Added
+
+- **Migration Roadmap Generator** — generates `MIGRATION.md` with phased migration plan when using `--migrate`
+  - Auto-detects migration strategy: strangler fig (backends), branch by abstraction (frontends), parallel run (Java)
+  - 4 migration phases with tasks: Assessment → Foundation (40%) → Stabilization (60%) → Production (80%)
+  - Includes ADR template and key CLI commands
+- **Initial ADR** — generates `docs/adr/ADR-0001-migration-strategy.md` with strategy rationale
+  - Stack-aware rationale explaining why the chosen strategy fits the detected framework
+  - Progressive quality gate references (40% → 60% → 80%)
+- 10 new migration generator tests (152 total across 9 suites)
+
 ## [0.7.0] - 2026-03-08
 
 ### Added

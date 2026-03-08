@@ -16,6 +16,7 @@ import { generateSettings } from './generators/settings.js';
 import { generateMcpConfig } from './generators/mcp-config.js';
 import { generateWorkflows } from './generators/workflows.js';
 import { generatePolicies } from './generators/policies.js';
+import { generateMigrationFiles } from './generators/migration.js';
 
 function generateRuleFiles(
   dir: string,
@@ -170,6 +171,26 @@ function generatePolicyFiles(
   }
 }
 
+function generateMigrationDocs(
+  dir: string,
+  stack: DetectedStack,
+  options: GenerateOptions,
+  result: GenerateResult,
+): void {
+  if (!options.migrate) return;
+
+  const files = generateMigrationFiles(stack, options.tier);
+  for (const { path, content } of files) {
+    writeIfNeeded(
+      join(dir, path),
+      content,
+      options.force,
+      options.dryRun,
+      result,
+    );
+  }
+}
+
 export function generate(
   stack: DetectedStack,
   options: GenerateOptions,
@@ -183,6 +204,7 @@ export function generate(
   generateMcpFile(dir, stack, options, result);
   generateWorkflowFiles(dir, stack, options, result);
   generatePolicyFiles(dir, stack, options, result);
+  generateMigrationDocs(dir, stack, options, result);
 
   return result;
 }

@@ -40,6 +40,8 @@ your-project/
 │       ├── scalability-review/SKILL.md # Scalability assessment
 │       ├── migration-audit/SKILL.md   # Legacy codebase assessment (--migrate)
 │       └── tech-debt-review/SKILL.md  # Tech debt prioritization (--migrate)
+├── MIGRATION.md                       # Migration roadmap (--migrate)
+├── docs/adr/ADR-0001-*.md            # Initial migration ADR (--migrate)
 ├── .mcp.json                          # MCP server configs
 ├── .forge/                            # (enterprise tier)
 │   ├── policies/                      # Security, quality, compliance policies
