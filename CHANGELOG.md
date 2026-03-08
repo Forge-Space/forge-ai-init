@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.14.0] - 2026-03-08
+
+### Added
+
+- **Go scanner rules** — 7 Go-specific anti-pattern detections (closes #3)
+  - bare error return without wrapping, panic(), empty interface{}, SQL concatenation in Exec
+  - blank import for side effects, global sync.Mutex, anonymous goroutine leak risk
+- **Rust scanner rules** — 6 Rust-specific anti-pattern detections (closes #4)
+  - unsafe block, .unwrap() panic, .expect() panic, .clone() copies, todo!/unimplemented! macros, lint suppression
+- **Svelte scanner rules** — 3 Svelte-specific detections (closes #2)
+  - {@html} XSS risk, reactive event handler, reactive fetch (use onMount)
+- **Go/Rust function counting** for architecture sprawl detection
+- 13 new Go/Rust/Svelte tests (285 total across 14 suites)
+
+### Changed
+
+- Scanner from 37 to 53 regex rules across 10 categories
+- Function sprawl detection now supports Go `func` and Rust `fn`/`pub fn`
+
 ## [0.13.0] - 2026-03-08
 
 ### Added

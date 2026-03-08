@@ -202,7 +202,7 @@ Run `migrate` to scan source code for anti-patterns, tech debt, and security iss
 npx forge-ai-init migrate
 ```
 
-Detects 37 patterns across 10 categories (language-aware — rules only fire on matching file types):
+Detects 53 patterns across 10 categories (language-aware — rules only fire on matching file types):
 
 | Category | What it finds |
 |----------|--------------|
@@ -217,6 +217,9 @@ Detects 37 patterns across 10 categories (language-aware — rules only fire on 
 | Accessibility | Images without alt text |
 | Hardcoded Values | Hardcoded URLs that should be config |
 | **Python** | Bare except, except-pass, os.system, subprocess shell, pickle, SQL format injection, typing.Any, type-ignore, import *, globals, mutable defaults, assert |
+| **Go** | Bare error return, panic, empty interface, SQL concatenation, blank import, global mutex, goroutine leak |
+| **Rust** | Unsafe blocks, unwrap/expect, excessive clone, todo! macro, allow(lint) suppression |
+| **Svelte** | {@html} XSS risk, reactive event handlers, reactive fetch calls |
 
 ```bash
 # Scan with colored terminal output

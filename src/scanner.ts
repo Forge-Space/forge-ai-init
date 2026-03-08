@@ -356,6 +356,134 @@ const RULES: Rule[] = [
     message: 'assert is stripped with -O flag — use proper validation for production code',
     extensions: ['.py'],
   },
+  {
+    pattern: /if\s+err\s*!=\s*nil\s*\{\s*return\s+(?:nil,\s*)?err\s*\}/g,
+    category: 'error-handling',
+    severity: 'medium',
+    rule: 'go-bare-error-return',
+    message: 'Bare error return without wrapping — use fmt.Errorf or errors.Wrap for context',
+    extensions: ['.go'],
+  },
+  {
+    pattern: /panic\s*\(/g,
+    category: 'error-handling',
+    severity: 'high',
+    rule: 'go-panic',
+    message: 'panic() crashes the program — return errors instead',
+    extensions: ['.go'],
+  },
+  {
+    pattern: /interface\s*\{\s*\}/g,
+    category: 'type-safety',
+    severity: 'medium',
+    rule: 'go-empty-interface',
+    message: 'Empty interface{} loses type safety — use generics or specific types',
+    extensions: ['.go'],
+  },
+  {
+    pattern: /\.\s*Exec\s*\(\s*["'`].*\+/g,
+    category: 'security',
+    severity: 'critical',
+    rule: 'go-sql-concat',
+    message: 'SQL concatenation in Exec — use parameterized queries',
+    extensions: ['.go'],
+  },
+  {
+    pattern: /import\s+_\s+"/g,
+    category: 'engineering',
+    severity: 'low',
+    rule: 'go-blank-import',
+    message: 'Blank import for side effects — document why with a comment',
+    extensions: ['.go'],
+  },
+  {
+    pattern: /var\s+\w+\s+sync\.Mutex/g,
+    category: 'scalability',
+    severity: 'medium',
+    rule: 'go-global-mutex',
+    message: 'Global mutex — consider channel-based concurrency or sync.RWMutex',
+    extensions: ['.go'],
+  },
+  {
+    pattern: /go\s+func\s*\(/g,
+    category: 'async',
+    severity: 'medium',
+    rule: 'go-goroutine-leak',
+    message: 'Anonymous goroutine — ensure proper lifecycle management and error handling',
+    extensions: ['.go'],
+  },
+  {
+    pattern: /unsafe\./g,
+    category: 'security',
+    severity: 'high',
+    rule: 'rust-unsafe',
+    message: 'unsafe block — minimize scope and document safety invariants',
+    extensions: ['.rs'],
+  },
+  {
+    pattern: /\.unwrap\s*\(\s*\)/g,
+    category: 'error-handling',
+    severity: 'high',
+    rule: 'rust-unwrap',
+    message: '.unwrap() panics on error — use ? operator or handle the error',
+    extensions: ['.rs'],
+  },
+  {
+    pattern: /\.expect\s*\(/g,
+    category: 'error-handling',
+    severity: 'medium',
+    rule: 'rust-expect',
+    message: '.expect() panics with message — prefer ? operator in production code',
+    extensions: ['.rs'],
+  },
+  {
+    pattern: /\.clone\s*\(\s*\)/g,
+    category: 'scalability',
+    severity: 'low',
+    rule: 'rust-clone',
+    message: '.clone() copies data — consider borrowing or Arc for shared ownership',
+    extensions: ['.rs'],
+  },
+  {
+    pattern: /todo!\s*\(|unimplemented!\s*\(/g,
+    category: 'engineering',
+    severity: 'medium',
+    rule: 'rust-todo-macro',
+    message: 'todo!/unimplemented! panics at runtime — implement before shipping',
+    extensions: ['.rs'],
+  },
+  {
+    pattern: /allow\s*\(\s*(?:clippy::|unused|dead_code)/g,
+    category: 'engineering',
+    severity: 'low',
+    rule: 'rust-allow-lint',
+    message: 'Lint suppression — fix the warning instead of suppressing it',
+    extensions: ['.rs'],
+  },
+  {
+    pattern: /\{@html\s/g,
+    category: 'security',
+    severity: 'high',
+    rule: 'svelte-raw-html',
+    message: '{@html} renders unescaped HTML — XSS risk, sanitize first',
+    extensions: ['.svelte'],
+  },
+  {
+    pattern: /on:\w+\s*=\s*\{[^}]*\$\s*:/g,
+    category: 'react',
+    severity: 'medium',
+    rule: 'svelte-reactive-event',
+    message: 'Reactive statement in event handler — may cause unexpected re-renders',
+    extensions: ['.svelte'],
+  },
+  {
+    pattern: /\$:\s*\{[\s\S]*?fetch\s*\(/g,
+    category: 'scalability',
+    severity: 'medium',
+    rule: 'svelte-reactive-fetch',
+    message: 'Fetch in reactive block — may trigger on every state change, use onMount',
+    extensions: ['.svelte'],
+  },
 ];
 
 const CODE_EXTENSIONS = new Set([
@@ -454,9 +582,14 @@ function checkFileSize(
     });
   }
 
-  const fnPattern = relPath.endsWith('.py')
+  const ext = extname(relPath);
+  const fnPattern = ext === '.py'
     ? /(?:^|\n)\s*(?:def|async\s+def)\s+\w+/g
-    : /(?:function\s+\w+|(?:export\s+)?(?:const|let)\s+\w+\s*=\s*(?:async\s*)?\()/g;
+    : ext === '.go'
+      ? /^func\s+/gm
+      : ext === '.rs'
+        ? /(?:^|\n)\s*(?:pub\s+)?(?:async\s+)?fn\s+\w+/g
+        : /(?:function\s+\w+|(?:export\s+)?(?:const|let)\s+\w+\s*=\s*(?:async\s*)?\()/g;
   const fnCount = (content.match(fnPattern) || []).length;
   if (fnCount > 15) {
     findings.push({
