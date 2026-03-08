@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **CI/CD integration guide** in README — GitHub Actions (quality gate, SARIF upload, staged scan, full pipeline), GitLab CI, pre-commit hooks, configurable thresholds, badge generation
+
 ## [0.15.0] - 2026-03-08
 
 ### Added
@@ -166,7 +172,7 @@
   - 10 rules: empty catch, console-only catch, hardcoded secrets, hardcoded URLs, ts-ignore, sync I/O, index-as-key, unsafe HTML injection, code injection, CSS !important
   - Architecture checks: god files (>500 lines), large files (>300 lines), function sprawl (>10/15 functions)
   - Walks source files (12 extensions: .ts, .tsx, .js, .jsx, .mjs, .cjs, .py, .go, .rs, .java, .vue, .svelte)
-  - Skips build dirs (node_modules, dist, .next, __pycache__, etc.)
+  - Skips build dirs (node_modules, dist, .next, **pycache**, etc.)
   - Severity-weighted scoring (critical=10, high=5, medium=2, low=1)
   - Category summary, top files ranking, colored terminal output
   - `--json` flag for machine-readable output

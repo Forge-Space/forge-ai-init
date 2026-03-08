@@ -67,36 +67,36 @@ Every generated rules file includes governance sections that prevent common AI-d
 
 Auto-detects your project's language, framework, build tool, package manager, test framework, and CI provider.
 
-| Category | Supported |
-|----------|-----------|
-| Languages | TypeScript, JavaScript, Python, Go, Rust, Java |
-| Frameworks | Next.js, React, Vue, Svelte, Express, NestJS, FastAPI, Django, Flask, Spring, Astro, Remix, Nuxt, SvelteKit |
-| Package Mgrs | npm, pnpm, yarn, bun, pip, poetry, cargo, go |
-| CI/CD | GitHub Actions, GitLab CI, CircleCI, Jenkins |
-| Test Frameworks | Jest, Vitest, pytest, Mocha, Playwright, Cypress |
-| Build Tools | Vite, webpack, Turbopack, esbuild, tsup, Rollup, Parcel |
+| Category        | Supported                                                                                                   |
+| --------------- | ----------------------------------------------------------------------------------------------------------- |
+| Languages       | TypeScript, JavaScript, Python, Go, Rust, Java                                                              |
+| Frameworks      | Next.js, React, Vue, Svelte, Express, NestJS, FastAPI, Django, Flask, Spring, Astro, Remix, Nuxt, SvelteKit |
+| Package Mgrs    | npm, pnpm, yarn, bun, pip, poetry, cargo, go                                                                |
+| CI/CD           | GitHub Actions, GitLab CI, CircleCI, Jenkins                                                                |
+| Test Frameworks | Jest, Vitest, pytest, Mocha, Playwright, Cypress                                                            |
+| Build Tools     | Vite, webpack, Turbopack, esbuild, tsup, Rollup, Parcel                                                     |
 
 ## Governance Tiers
 
-| Tier | For | Skills | What's generated |
-|------|-----|--------|------------------|
-| **Lite** | Solo dev, prototypes | 0 | Rules + hooks |
-| **Standard** | Teams, production | 3 | Rules + skills + MCP + CI |
-| **Enterprise** | Organizations | 7 | Standard + policies + scorecard + feature toggles |
+| Tier           | For                  | Skills | What's generated                                  |
+| -------------- | -------------------- | ------ | ------------------------------------------------- |
+| **Lite**       | Solo dev, prototypes | 0      | Rules + hooks                                     |
+| **Standard**   | Teams, production    | 3      | Rules + skills + MCP + CI                         |
+| **Enterprise** | Organizations        | 7      | Standard + policies + scorecard + feature toggles |
 
 ### Skills by Tier
 
-| Skill | Lite | Standard | Enterprise |
-|-------|------|----------|------------|
-| quality-gate | - | ✓ | ✓ |
-| security-check | - | ✓ | ✓ |
-| code-conscience | - | ✓ | ✓ |
-| arch-review | - | - | ✓ |
-| test-first | - | - | ✓ |
-| dependency-audit | - | - | ✓ |
-| scalability-review | - | - | ✓ |
-| migration-audit | - | `--migrate` | `--migrate` |
-| tech-debt-review | - | `--migrate` | `--migrate` |
+| Skill              | Lite | Standard    | Enterprise  |
+| ------------------ | ---- | ----------- | ----------- |
+| quality-gate       | -    | ✓           | ✓           |
+| security-check     | -    | ✓           | ✓           |
+| code-conscience    | -    | ✓           | ✓           |
+| arch-review        | -    | -           | ✓           |
+| test-first         | -    | -           | ✓           |
+| dependency-audit   | -    | -           | ✓           |
+| scalability-review | -    | -           | ✓           |
+| migration-audit    | -    | `--migrate` | `--migrate` |
+| tech-debt-review   | -    | `--migrate` | `--migrate` |
 
 ## CLI Usage
 
@@ -140,17 +140,17 @@ npx forge-ai-init migrate --staged
 
 ### Options
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--dir <path>` | Target project directory | `.` |
-| `--tier <level>` | Governance tier: `lite`, `standard`, `enterprise` | `standard` |
-| `--tools <list>` | AI tools: `claude`, `cursor`, `windsurf`, `copilot` | `claude` |
-| `--migrate` | Legacy migration mode (extra rules + skills) | `false` |
-| `--force` | Overwrite existing files | `false` |
-| `--dry-run` | Show what would be created | `false` |
-| `--yes` | Skip interactive prompts | `false` |
-| `--staged` | Scan only git-staged files (migrate command) | `false` |
-| `--watch` | Watch for changes and re-scan (migrate command) | `false` |
+| Flag             | Description                                         | Default    |
+| ---------------- | --------------------------------------------------- | ---------- |
+| `--dir <path>`   | Target project directory                            | `.`        |
+| `--tier <level>` | Governance tier: `lite`, `standard`, `enterprise`   | `standard` |
+| `--tools <list>` | AI tools: `claude`, `cursor`, `windsurf`, `copilot` | `claude`   |
+| `--migrate`      | Legacy migration mode (extra rules + skills)        | `false`    |
+| `--force`        | Overwrite existing files                            | `false`    |
+| `--dry-run`      | Show what would be created                          | `false`    |
+| `--yes`          | Skip interactive prompts                            | `false`    |
+| `--staged`       | Scan only git-staged files (migrate command)        | `false`    |
+| `--watch`        | Watch for changes and re-scan (migrate command)     | `false`    |
 
 ## Update Governance Files
 
@@ -180,15 +180,15 @@ npx forge-ai-init check
 
 Scores 7 categories with 20+ weighted checks:
 
-| Category | What it checks |
-|----------|---------------|
-| AI Rules | CLAUDE.md, AI governance rules, anti-patterns, multi-tool coverage |
-| Skills | Governance skills count and coverage |
-| Hooks & Safety | Claude settings, PreToolUse safety hooks, PostToolUse formatting |
-| CI/CD | Pipeline presence, secret scanning, security scanning |
-| Security | .env protection, SECURITY.md, MCP config |
-| Code Quality | Linting, type checking, formatting, test framework |
-| Policies | Enterprise policies, scorecard config |
+| Category       | What it checks                                                     |
+| -------------- | ------------------------------------------------------------------ |
+| AI Rules       | CLAUDE.md, AI governance rules, anti-patterns, multi-tool coverage |
+| Skills         | Governance skills count and coverage                               |
+| Hooks & Safety | Claude settings, PreToolUse safety hooks, PostToolUse formatting   |
+| CI/CD          | Pipeline presence, secret scanning, security scanning              |
+| Security       | .env protection, SECURITY.md, MCP config                           |
+| Code Quality   | Linting, type checking, formatting, test framework                 |
+| Policies       | Enterprise policies, scorecard config                              |
 
 Grades: **A** (90+) → **B** (75+) → **C** (60+) → **D** (40+) → **F** (<40)
 
@@ -212,22 +212,22 @@ npx forge-ai-init migrate
 
 Detects 53 patterns across 10 categories (language-aware — rules only fire on matching file types):
 
-| Category | What it finds |
-|----------|--------------|
-| Security | Hardcoded secrets, innerHTML assignment, SQL injection, code injection, unsafe HTML |
-| Error Handling | Empty catch blocks, console-only error handling |
-| Architecture | God files (>500 lines), function sprawl (>15 functions) |
-| Engineering | @ts-ignore, sync I/O, index-as-key, console.log, TODO/FIXME, forEach+push |
-| Async | Async Promise constructor, deep promise chains, setTimeout zero-delay |
-| Type Safety | Explicit `any`, type assertions, non-null assertions |
-| React | Fetch in useEffect, excessive useState (4+) |
-| Scalability | Full lodash import |
-| Accessibility | Images without alt text |
-| Hardcoded Values | Hardcoded URLs that should be config |
-| **Python** | Bare except, except-pass, os.system, subprocess shell, pickle, SQL format injection, typing.Any, type-ignore, import *, globals, mutable defaults, assert |
-| **Go** | Bare error return, panic, empty interface, SQL concatenation, blank import, global mutex, goroutine leak |
-| **Rust** | Unsafe blocks, unwrap/expect, excessive clone, todo! macro, allow(lint) suppression |
-| **Svelte** | {@html} XSS risk, reactive event handlers, reactive fetch calls |
+| Category         | What it finds                                                                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Security         | Hardcoded secrets, innerHTML assignment, SQL injection, code injection, unsafe HTML                                                                        |
+| Error Handling   | Empty catch blocks, console-only error handling                                                                                                            |
+| Architecture     | God files (>500 lines), function sprawl (>15 functions)                                                                                                    |
+| Engineering      | @ts-ignore, sync I/O, index-as-key, console.log, TODO/FIXME, forEach+push                                                                                  |
+| Async            | Async Promise constructor, deep promise chains, setTimeout zero-delay                                                                                      |
+| Type Safety      | Explicit `any`, type assertions, non-null assertions                                                                                                       |
+| React            | Fetch in useEffect, excessive useState (4+)                                                                                                                |
+| Scalability      | Full lodash import                                                                                                                                         |
+| Accessibility    | Images without alt text                                                                                                                                    |
+| Hardcoded Values | Hardcoded URLs that should be config                                                                                                                       |
+| **Python**       | Bare except, except-pass, os.system, subprocess shell, pickle, SQL format injection, typing.Any, type-ignore, import \*, globals, mutable defaults, assert |
+| **Go**           | Bare error return, panic, empty interface, SQL concatenation, blank import, global mutex, goroutine leak                                                   |
+| **Rust**         | Unsafe blocks, unwrap/expect, excessive clone, todo! macro, allow(lint) suppression                                                                        |
+| **Svelte**       | {@html} XSS risk, reactive event handlers, reactive fetch calls                                                                                            |
 
 ```bash
 # Scan with colored terminal output
@@ -259,17 +259,18 @@ npx forge-ai-init assess
 
 Analyzes 5 categories with 35+ checks:
 
-| Category | What it checks |
-|----------|---------------|
-| Dependencies | Legacy packages (jQuery, Moment, etc.), excessive deps, missing lockfile, no engine constraint |
-| Architecture | God files (>500 lines), function sprawl (>20 per file), high coupling (>15 imports), flat structure |
-| Security | Hardcoded secrets, AWS keys, private keys, eval/innerHTML/SQL injection, unrestricted CORS, missing .gitignore/.env |
-| Quality | Test framework, linting, type checking, formatting, CI/CD, empty catch blocks, TODO accumulation, test coverage ratio |
-| Migration Readiness | Legacy stack detection, global state pollution, TypeScript adoption, documentation, test safety net |
+| Category            | What it checks                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Dependencies        | Legacy packages (jQuery, Moment, etc.), excessive deps, missing lockfile, no engine constraint                        |
+| Architecture        | God files (>500 lines), function sprawl (>20 per file), high coupling (>15 imports), flat structure                   |
+| Security            | Hardcoded secrets, AWS keys, private keys, eval/innerHTML/SQL injection, unrestricted CORS, missing .gitignore/.env   |
+| Quality             | Test framework, linting, type checking, formatting, CI/CD, empty catch blocks, TODO accumulation, test coverage ratio |
+| Migration Readiness | Legacy stack detection, global state pollution, TypeScript adoption, documentation, test safety net                   |
 
 Health score (0-100) with A-F grading per category and overall. Migration readiness: **ready** / **needs-work** / **high-risk**.
 
 Auto-detects migration strategy:
+
 - **Strangler fig** — backends (Express, FastAPI, Django, Flask)
 - **Branch by abstraction** — frontends (React, Vue, Next.js)
 - **Parallel run** — Java applications
@@ -311,11 +312,11 @@ Customize governance rules per-project with `.forgerc.json`:
 
 ### Presets
 
-| Preset | Commit | PR | Deploy | Relaxed Rules |
-|--------|--------|----|--------|---------------|
-| `strict` | 80 | 85 | 90 | None |
-| `recommended` | 60 | 70 | 80 | None |
-| `lenient` | 40 | 50 | 60 | console-log, todo-marker, type-assertion disabled |
+| Preset        | Commit | PR  | Deploy | Relaxed Rules                                     |
+| ------------- | ------ | --- | ------ | ------------------------------------------------- |
+| `strict`      | 80     | 85  | 90     | None                                              |
+| `recommended` | 60     | 70  | 80     | None                                              |
+| `lenient`     | 40     | 50  | 60     | console-log, todo-marker, type-assertion disabled |
 
 Config is auto-generated during scaffolding with a tier-appropriate preset. Supports `.forgerc.json`, `.forgerc`, and `forge.config.json`.
 
@@ -353,11 +354,11 @@ Use `--migrate` to add governance to existing legacy projects. This mode adds:
 - **dependency-audit skill** — Security vulnerabilities, outdated packages, license compliance, bundle impact
 - **Progressive Quality Gates** — phased enforcement that increases thresholds as migration progresses:
 
-| Phase | Threshold | Focus |
-|-------|-----------|-------|
-| Initial | 40% | Critical security, basic tests |
-| Stabilization | 60% | Linting, type safety, test coverage |
-| Production | 80% | Full governance enforcement |
+| Phase         | Threshold | Focus                               |
+| ------------- | --------- | ----------------------------------- |
+| Initial       | 40%       | Critical security, basic tests      |
+| Stabilization | 60%       | Linting, type safety, test coverage |
+| Production    | 80%       | Full governance enforcement         |
 
 - **Migration CI Workflow** — `migration-gate.yml` running governance audit + migration policy checks on every PR
 - **Characterization test enforcement** — blocks migration without behavioral parity tests
@@ -373,12 +374,12 @@ npx forge-ai-init --migrate --tier enterprise --yes
 
 ## AI Tool Support
 
-| Tool | Files Generated |
-|------|----------------|
-| Claude Code | `CLAUDE.md`, `.claude/settings.json`, `.claude/skills/`, `.mcp.json` |
-| Cursor | `.cursorrules` |
-| Windsurf | `.windsurfrules` |
-| GitHub Copilot | `.github/copilot-instructions.md` |
+| Tool           | Files Generated                                                      |
+| -------------- | -------------------------------------------------------------------- |
+| Claude Code    | `CLAUDE.md`, `.claude/settings.json`, `.claude/skills/`, `.mcp.json` |
+| Cursor         | `.cursorrules`                                                       |
+| Windsurf       | `.windsurfrules`                                                     |
+| GitHub Copilot | `.github/copilot-instructions.md`                                    |
 
 ## Enterprise Policy Engine
 
@@ -390,6 +391,199 @@ The enterprise tier generates a `.forge/` directory with policy files compatible
 - **Framework policies** — a11y (React/Next.js), bundle size (Next.js), API validation (Express/NestJS/FastAPI)
 - **Scorecard config** — framework-aware weights for automated project scoring
 - **CI workflows** — `scorecard.yml` and `policy-check.yml` for PR-level enforcement
+
+## CI/CD Integration
+
+### GitHub Actions
+
+#### Quality Gate on Pull Requests
+
+```yaml
+name: AI Governance
+on: [pull_request]
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for anti-patterns
+        run: npx forge-ai-init migrate --format json --output scan.json
+
+      - name: Check quality gate
+        run: |
+          SCORE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('scan.json','utf8')).score)")
+          echo "Score: $SCORE/100"
+          if [ "$SCORE" -lt 60 ]; then
+            echo "::error::Quality gate failed ($SCORE < 60)"
+            exit 1
+          fi
+
+      - name: Upload SARIF to Security tab
+        if: always()
+        run: npx forge-ai-init migrate --format sarif --output results.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results.sarif
+```
+
+#### Staged Scan (Fast PR Check)
+
+For faster CI on large repos, scan only changed files:
+
+```yaml
+- name: Scan changed files only
+  run: |
+    git diff --name-only origin/main...HEAD > /tmp/changed.txt
+    npx forge-ai-init migrate --staged --json
+```
+
+#### Governance Audit
+
+Check if a project meets governance standards before deploy:
+
+```yaml
+- name: Governance audit
+  run: |
+    npx forge-ai-init check --dir . 2>&1 | tee audit.txt
+    # Parse grade from output
+    if grep -q "Grade: F" audit.txt; then
+      echo "::error::Governance audit failed"
+      exit 1
+    fi
+```
+
+#### Full Pipeline (Scan + Assess + Audit)
+
+```yaml
+name: AI Governance Suite
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx forge-ai-init migrate --format sarif --output results.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results.sarif
+
+  assess:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migration assessment
+        run: npx forge-ai-init assess --format markdown --output assessment.md
+      - name: Post assessment as PR comment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('assessment.md', 'utf8');
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body: `## AI Governance Assessment\n\n${body}`
+            });
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx forge-ai-init check
+```
+
+### GitLab CI
+
+```yaml
+ai-governance:
+  image: node:22
+  stage: test
+  script:
+    - npx forge-ai-init migrate --format json --output scan.json
+    - |
+      SCORE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('scan.json','utf8')).score)")
+      echo "Score: $SCORE/100"
+      [ "$SCORE" -ge 60 ] || exit 1
+  artifacts:
+    reports:
+      sast: results.sarif
+    paths:
+      - scan.json
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+```
+
+### Pre-Commit Hook
+
+Add to your project's pre-commit (works with Husky, lefthook, or plain git hooks):
+
+```bash
+#!/bin/sh
+# .husky/pre-commit or .git/hooks/pre-commit
+
+npx forge-ai-init migrate --staged --json > /tmp/forge-scan.json
+SCORE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/forge-scan.json','utf8')).score)")
+
+if [ "$SCORE" -lt 60 ]; then
+  echo "Governance check failed: $SCORE/100 (minimum: 60)"
+  echo "Run 'npx forge-ai-init migrate' to see details"
+  exit 1
+fi
+```
+
+### Configuring Thresholds
+
+Use `.forgerc.json` to set different thresholds per stage:
+
+```json
+{
+  "extends": "recommended",
+  "thresholds": {
+    "commit": 60,
+    "pr": 70,
+    "deploy": 80
+  }
+}
+```
+
+Then reference in CI:
+
+```bash
+THRESHOLD=$(node -e "
+  const c = JSON.parse(require('fs').readFileSync('.forgerc.json','utf8'));
+  console.log(c.thresholds?.pr ?? 70)
+")
+npx forge-ai-init migrate --json | node -e "
+  let d='';process.stdin.on('data',c=>d+=c);
+  process.stdin.on('end',()=>{
+    const r=JSON.parse(d);
+    console.log('Score:',r.score,'/ Threshold:',${THRESHOLD});
+    process.exit(r.score < ${THRESHOLD} ? 1 : 0)
+  })
+"
+```
+
+### Badge Generation
+
+Add a governance score badge to your README:
+
+```bash
+# Generate badge URL from scan score
+SCORE=$(npx forge-ai-init migrate --json | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(JSON.parse(d).score))")
+GRADE=$(npx forge-ai-init migrate --json | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(JSON.parse(d).grade))")
+COLOR=$( [ "$SCORE" -ge 90 ] && echo "brightgreen" || [ "$SCORE" -ge 75 ] && echo "green" || [ "$SCORE" -ge 60 ] && echo "yellow" || echo "red" )
+
+echo "![Governance](https://img.shields.io/badge/governance-${GRADE}%20${SCORE}%25-${COLOR})"
+```
 
 ## License
 
