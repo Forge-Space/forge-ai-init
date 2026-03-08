@@ -118,6 +118,18 @@ npx forge-ai-init --force
 
 # Target a specific directory
 npx forge-ai-init --dir /path/to/project
+
+# Update existing governance files (auto-detects tier/tools)
+npx forge-ai-init update
+
+# Update and upgrade to enterprise tier
+npx forge-ai-init update --tier enterprise
+
+# Assess migration readiness
+npx forge-ai-init assess
+
+# Assess with JSON output
+npx forge-ai-init assess --json
 ```
 
 ### Options
@@ -131,6 +143,24 @@ npx forge-ai-init --dir /path/to/project
 | `--force` | Overwrite existing files | `false` |
 | `--dry-run` | Show what would be created | `false` |
 | `--yes` | Skip interactive prompts | `false` |
+
+## Update Governance Files
+
+Run `update` to re-generate governance files with the latest rules and patterns:
+
+```bash
+npx forge-ai-init update
+```
+
+Auto-detects your current tier, tools, and migration mode from existing files. Only overwrites files whose content actually changed — unchanged files are preserved.
+
+```bash
+# Upgrade from lite to standard tier
+npx forge-ai-init update --tier standard
+
+# Add Cursor support to existing setup
+npx forge-ai-init update --tools claude,cursor
+```
 
 ## Governance Audit
 
@@ -172,14 +202,19 @@ Run `migrate` to scan source code for anti-patterns, tech debt, and security iss
 npx forge-ai-init migrate
 ```
 
-Detects 10+ patterns across 6 categories:
+Detects 25 patterns across 10 categories:
 
 | Category | What it finds |
 |----------|--------------|
-| Security | Hardcoded secrets, unsafe HTML injection, code injection |
+| Security | Hardcoded secrets, innerHTML assignment, SQL injection, code injection, unsafe HTML |
 | Error Handling | Empty catch blocks, console-only error handling |
 | Architecture | God files (>500 lines), function sprawl (>15 functions) |
-| Engineering | @ts-ignore, synchronous I/O, array index as React key |
+| Engineering | @ts-ignore, sync I/O, index-as-key, console.log, TODO/FIXME, forEach+push |
+| Async | Async Promise constructor, deep promise chains, setTimeout zero-delay |
+| Type Safety | Explicit `any`, type assertions, non-null assertions |
+| React | Fetch in useEffect, excessive useState (4+) |
+| Scalability | Full lodash import |
+| Accessibility | Images without alt text |
 | Hardcoded Values | Hardcoded URLs that should be config |
 
 ```bash
@@ -191,6 +226,46 @@ npx forge-ai-init migrate --json
 
 # Scan a specific directory
 npx forge-ai-init migrate --dir /path/to/project
+```
+
+## Migration Assessment
+
+Run `assess` to get a full health assessment of any codebase before migration:
+
+```bash
+npx forge-ai-init assess
+```
+
+Analyzes 5 categories with 35+ checks:
+
+| Category | What it checks |
+|----------|---------------|
+| Dependencies | Legacy packages (jQuery, Moment, etc.), excessive deps, missing lockfile, no engine constraint |
+| Architecture | God files (>500 lines), function sprawl (>20 per file), high coupling (>15 imports), flat structure |
+| Security | Hardcoded secrets, AWS keys, private keys, eval/innerHTML/SQL injection, unrestricted CORS, missing .gitignore/.env |
+| Quality | Test framework, linting, type checking, formatting, CI/CD, empty catch blocks, TODO accumulation, test coverage ratio |
+| Migration Readiness | Legacy stack detection, global state pollution, TypeScript adoption, documentation, test safety net |
+
+Health score (0-100) with A-F grading per category and overall. Migration readiness: **ready** / **needs-work** / **high-risk**.
+
+Auto-detects migration strategy:
+- **Strangler fig** — backends (Express, FastAPI, Django, Flask)
+- **Branch by abstraction** — frontends (React, Vue, Next.js)
+- **Parallel run** — Java applications
+
+```bash
+# Assess with colored terminal output
+npx forge-ai-init assess
+
+# Machine-readable JSON output
+npx forge-ai-init assess --json
+
+# Assess a specific directory
+npx forge-ai-init assess --dir /path/to/legacy-app
+
+# Full migration workflow
+npx forge-ai-init assess --dir /path/to/legacy-app
+npx forge-ai-init --migrate --tier enterprise --dir /path/to/legacy-app
 ```
 
 ## Legacy Migration Mode

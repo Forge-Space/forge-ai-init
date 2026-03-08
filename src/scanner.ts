@@ -9,7 +9,11 @@ export type FindingCategory =
   | 'scalability'
   | 'hardcoded-values'
   | 'engineering'
-  | 'security';
+  | 'security'
+  | 'async'
+  | 'react'
+  | 'accessibility'
+  | 'type-safety';
 
 export interface Finding {
   file: string;
@@ -123,6 +127,116 @@ const RULES: Rule[] = [
     severity: 'low',
     rule: 'css-important',
     message: '!important overrides — hard to maintain',
+  },
+  {
+    pattern: /new Promise\s*\(\s*(?:async|(?:\([^)]*\)\s*=>))/g,
+    category: 'async',
+    severity: 'high',
+    rule: 'promise-constructor-async',
+    message:
+      'Async function inside Promise constructor — use async/await directly',
+  },
+  {
+    pattern: /\.then\s*\([\s\S]*?\)\s*\.then\s*\([\s\S]*?\)\s*\.then/g,
+    category: 'async',
+    severity: 'medium',
+    rule: 'promise-chain',
+    message: 'Deep promise chain — refactor to async/await',
+  },
+  {
+    pattern: /(?:setTimeout|setInterval)\s*\([^,]+,\s*0\s*\)/g,
+    category: 'async',
+    severity: 'medium',
+    rule: 'setTimeout-zero',
+    message: 'setTimeout(fn, 0) — use queueMicrotask or proper async',
+  },
+  {
+    pattern:
+      /useEffect\s*\(\s*\(\)\s*=>\s*\{[^}]*fetch\s*\(/g,
+    category: 'react',
+    severity: 'medium',
+    rule: 'fetch-in-useEffect',
+    message: 'Fetch in useEffect without cleanup — use a data fetching library',
+  },
+  {
+    pattern:
+      /useState\s*<[^>]*>\s*\([^)]*\)\s*;[^;]*useState\s*<[^>]*>\s*\([^)]*\)\s*;[^;]*useState\s*<[^>]*>\s*\([^)]*\)\s*;[^;]*useState/g,
+    category: 'react',
+    severity: 'medium',
+    rule: 'excessive-useState',
+    message: '4+ useState calls — consolidate with useReducer or object state',
+  },
+  {
+    pattern: /:\s*any\b/g,
+    category: 'type-safety',
+    severity: 'medium',
+    rule: 'any-type',
+    message: 'Explicit `any` type — use a specific type or `unknown`',
+  },
+  {
+    pattern: /as\s+(?!const\b)\w+/g,
+    category: 'type-safety',
+    severity: 'low',
+    rule: 'type-assertion',
+    message: 'Type assertion — prefer type narrowing with guards',
+  },
+  {
+    pattern: /!\./g,
+    category: 'type-safety',
+    severity: 'medium',
+    rule: 'non-null-assertion',
+    message: 'Non-null assertion (!) — handle null case explicitly',
+  },
+  {
+    pattern: /innerHTML\s*=/g,
+    category: 'security',
+    severity: 'high',
+    rule: 'innerHTML-assignment',
+    message: 'innerHTML assignment — XSS risk, use textContent or sanitize',
+  },
+  {
+    pattern: /<img\b[^>]*(?!alt\s*=)[^>]*\/?>/g,
+    category: 'accessibility',
+    severity: 'medium',
+    rule: 'img-no-alt',
+    message: 'Image without alt attribute — add alt text for accessibility',
+  },
+  {
+    pattern: /console\.(log|debug|info)\s*\(/g,
+    category: 'engineering',
+    severity: 'low',
+    rule: 'console-log',
+    message: 'Console statement — use a logger or remove before production',
+  },
+  {
+    pattern: /TODO|FIXME|HACK|XXX/g,
+    category: 'engineering',
+    severity: 'low',
+    rule: 'todo-marker',
+    message: 'TODO/FIXME marker — resolve before merging',
+  },
+  {
+    pattern: /import\s+\w+\s+from\s+['"]lodash['"]/g,
+    category: 'scalability',
+    severity: 'medium',
+    rule: 'lodash-full-import',
+    message: 'Full lodash import — use lodash/specific or lodash-es for tree-shaking',
+  },
+  {
+    pattern: /\.forEach\s*\([^)]*=>[^)]*\.push\b/g,
+    category: 'engineering',
+    severity: 'low',
+    rule: 'forEach-push',
+    message: 'forEach + push pattern — use map/filter/reduce instead',
+  },
+  {
+    pattern:
+      /(?:SELECT|INSERT|UPDATE|DELETE)\s+.*\+\s*(?:\w+|['"`])/gi,
+    category: 'security',
+    severity: 'critical',
+    rule: 'sql-concatenation',
+    message:
+      'SQL string concatenation — use parameterized queries to prevent injection',
   },
 ];
 

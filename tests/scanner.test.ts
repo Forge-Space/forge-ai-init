@@ -143,4 +143,127 @@ const token = "secret12345678";
     expect(parsed.score).toBeDefined();
     expect(parsed.findings).toBeInstanceOf(Array);
   });
+
+  it('detects async function inside Promise constructor', () => {
+    writeFile(dir, 'src/async.ts', 'const p = new Promise(async (resolve) => {\n  resolve(1);\n});');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'promise-constructor-async');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('async');
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects deep promise chains', () => {
+    writeFile(dir, 'src/chain.ts', 'fetch("/api").then((r) => r.json()).then((d) => d.value).then((v) => v);');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'promise-chain');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('async');
+  });
+
+  it('detects setTimeout with zero delay', () => {
+    writeFile(dir, 'src/timer.ts', 'setTimeout(doSomething, 0);');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'setTimeout-zero');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('async');
+  });
+
+  it('detects explicit any type', () => {
+    writeFile(dir, 'src/types.ts', 'function process(data: any): void {}');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'any-type');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('type-safety');
+  });
+
+  it('detects type assertions', () => {
+    writeFile(dir, 'src/assert.ts', 'const el = document.getElementById("app") as HTMLDivElement;');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'type-assertion');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('type-safety');
+  });
+
+  it('detects non-null assertions', () => {
+    writeFile(dir, 'src/bang.ts', 'const value = map.get("key")!.toString();');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'non-null-assertion');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('type-safety');
+  });
+
+  it('detects innerHTML assignment', () => {
+    writeFile(dir, 'src/dom.ts', 'element.innerHTML = userInput;');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'innerHTML-assignment');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects SQL string concatenation', () => {
+    writeFile(dir, 'src/db.ts', 'const query = "SELECT * FROM users WHERE id = " + userId;');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'sql-concatenation');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects console.log statements', () => {
+    writeFile(dir, 'src/debug.ts', 'console.log("debugging");\nconsole.debug("more");');
+    const report = scanProject(dir);
+    const findings = report.findings.filter(f => f.rule === 'console-log');
+    expect(findings.length).toBeGreaterThanOrEqual(2);
+    expect(findings[0]!.category).toBe('engineering');
+  });
+
+  it('detects TODO/FIXME markers', () => {
+    writeFile(dir, 'src/wip.ts', '// TODO: refactor this\n// FIXME: broken\nconst x = 1;');
+    const report = scanProject(dir);
+    const findings = report.findings.filter(f => f.rule === 'todo-marker');
+    expect(findings.length).toBeGreaterThanOrEqual(2);
+    expect(findings[0]!.category).toBe('engineering');
+  });
+
+  it('detects full lodash imports', () => {
+    writeFile(dir, 'src/utils.ts', "import _ from 'lodash';\nconst sorted = _.sortBy(items, 'name');");
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'lodash-full-import');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('scalability');
+  });
+
+  it('detects forEach + push pattern', () => {
+    writeFile(dir, 'src/loop.ts', 'items.forEach(item => results.push(item.name));');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'forEach-push');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('engineering');
+  });
+
+  it('detects unsafe HTML usage in JSX', () => {
+    writeFile(dir, 'src/comp.tsx', '<div dangerouslySetInnerHTML={{ __html: html }} />');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'unsafe-html');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects hardcoded URLs', () => {
+    writeFile(dir, 'src/api.ts', 'const API_URL = "https://api.myservice.com/v1";');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'hardcoded-url');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('hardcoded-values');
+  });
+
+  it('detects console-only catch blocks', () => {
+    writeFile(dir, 'src/handler.ts', 'try {\n  riskyOp();\n} catch (e) {\n  console.error(e);\n}');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'console-only-catch');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+  });
 });

@@ -84,6 +84,24 @@ function gitWorkflowHooks(): Hook[] {
   ];
 }
 
+function preCommitHooks(tier: Tier): Hook[] {
+  if (tier === 'lite') return [];
+
+  const threshold = tier === 'enterprise' ? 75 : 60;
+
+  return [
+    {
+      matcher: 'Bash(git commit)',
+      hooks: [
+        {
+          type: 'command',
+          command: `npx forge-ai-init migrate --json 2>/dev/null | node -e "const r=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));if(r.score<${threshold}){console.error('BLOCK: Quality score '+r.score+'/${threshold}. Fix findings before committing.');process.exit(1)}else{console.log('Quality gate passed: '+r.score+'/100 ('+r.grade+')')}"`,
+        },
+      ],
+    },
+  ];
+}
+
 function secretProtectionHooks(): Hook[] {
   return [
     {
@@ -111,6 +129,7 @@ export function generateSettings(
 
   if (tier !== 'lite') {
     preToolUse.push(...gitWorkflowHooks());
+    preToolUse.push(...preCommitHooks(tier));
   }
 
   return {
