@@ -1,6 +1,5 @@
 import { join } from 'node:path';
 import type {
-  AITool,
   DetectedStack,
   GenerateOptions,
   GenerateResult,
