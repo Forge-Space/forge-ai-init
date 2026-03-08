@@ -4,6 +4,7 @@ import pc from 'picocolors';
 import { detectStack } from './detector.js';
 import { generate } from './generator.js';
 import { runAudit, type CheckStatus } from './checker.js';
+import { scanProject, type Severity } from './scanner.js';
 import type { AITool, DetectedStack, Tier } from './types.js';
 
 function formatStack(stack: DetectedStack): string {
@@ -255,6 +256,105 @@ function runCheckCommand(
   console.log('');
 }
 
+function severityColor(s: Severity): string {
+  switch (s) {
+    case 'critical':
+      return pc.bgRed(pc.white(` ${s} `));
+    case 'high':
+      return pc.red(s);
+    case 'medium':
+      return pc.yellow(s);
+    case 'low':
+      return pc.dim(s);
+  }
+}
+
+function runScanCommand(
+  projectDir: string,
+  asJson: boolean,
+): void {
+  const report = scanProject(projectDir);
+
+  if (asJson) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init scan'))} — Code Anti-Pattern Scanner`,
+  );
+  console.log('');
+  console.log(
+    `  ${pc.dim('Project:')} ${projectDir}`,
+  );
+  console.log(
+    `  ${pc.dim('Files scanned:')} ${report.filesScanned}`,
+  );
+  console.log(
+    `  ${pc.dim('Findings:')} ${report.findings.length}`,
+  );
+  console.log('');
+
+  if (report.summary.length > 0) {
+    console.log(`  ${pc.bold('By category:')}`);
+    for (const cat of report.summary) {
+      const critLabel = cat.critical > 0
+        ? pc.red(` (${cat.critical} critical)`)
+        : '';
+      const highLabel = cat.high > 0
+        ? pc.yellow(` (${cat.high} high)`)
+        : '';
+      console.log(
+        `    ${cat.category} ${pc.dim('─'.repeat(20 - cat.category.length))} ${cat.count} findings${critLabel}${highLabel}`,
+      );
+    }
+    console.log('');
+  }
+
+  if (report.topFiles.length > 0) {
+    console.log(`  ${pc.bold('Top files:')}`);
+    for (const f of report.topFiles.slice(0, 5)) {
+      console.log(
+        `    ${severityColor(f.worst)} ${f.file} (${f.count} findings)`,
+      );
+    }
+    console.log('');
+  }
+
+  const top = report.findings.slice(0, 15);
+  if (top.length > 0) {
+    console.log(`  ${pc.bold('Top findings:')}`);
+    for (const f of top) {
+      console.log(
+        `    ${severityColor(f.severity)} ${pc.dim(`${f.file}:${f.line}`)} ${f.message}`,
+      );
+    }
+    if (report.findings.length > 15) {
+      console.log(
+        pc.dim(
+          `    ... and ${report.findings.length - 15} more`,
+        ),
+      );
+    }
+    console.log('');
+  }
+
+  console.log(
+    pc.bold(
+      `  Grade: ${gradeColor(report.grade)}  Score: ${report.score}/100`,
+    ),
+  );
+  console.log('');
+
+  if (report.grade !== 'A') {
+    console.log(
+      `  ${pc.dim('Add governance:')} npx forge-ai-init --migrate`,
+    );
+    console.log('');
+  }
+}
+
 function printResult(
   projectDir: string,
   result: { created: string[]; skipped: string[] },
@@ -484,6 +584,11 @@ async function main(): Promise<void> {
 
   if (opts['command'] === 'check') {
     runCheckCommand(projectDir, stack);
+    return;
+  }
+
+  if (opts['command'] === 'migrate') {
+    runScanCommand(projectDir, opts['json'] === true);
     return;
   }
 

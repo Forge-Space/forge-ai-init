@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.0] - 2026-03-08
+
+### Added
+
+- **`scan` command** (`forge-ai-init migrate`) — Static analysis scanner that detects AI anti-patterns in source code
+  - 10 rules: empty catch, console-only catch, hardcoded secrets, hardcoded URLs, ts-ignore, sync I/O, index-as-key, unsafe HTML injection, code injection, CSS !important
+  - Architecture checks: god files (>500 lines), large files (>300 lines), function sprawl (>10/15 functions)
+  - Walks source files (12 extensions: .ts, .tsx, .js, .jsx, .mjs, .cjs, .py, .go, .rs, .java, .vue, .svelte)
+  - Skips build dirs (node_modules, dist, .next, __pycache__, etc.)
+  - Severity-weighted scoring (critical=10, high=5, medium=2, low=1)
+  - Category summary, top files ranking, colored terminal output
+  - `--json` flag for machine-readable output
+  - Max 500 files per scan (configurable)
+- 12 new scanner tests (142 total across 8 suites)
+
 ## [0.6.0] - 2026-03-08
 
 ### Added

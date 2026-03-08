@@ -162,6 +162,35 @@ npx forge-ai-init check --dir /path/to/legacy-app
 npx forge-ai-init --migrate --tier enterprise --dir /path/to/legacy-app
 ```
 
+## Code Scanner
+
+Run `migrate` to scan source code for anti-patterns, tech debt, and security issues:
+
+```bash
+npx forge-ai-init migrate
+```
+
+Detects 10+ patterns across 6 categories:
+
+| Category | What it finds |
+|----------|--------------|
+| Security | Hardcoded secrets, unsafe HTML injection, code injection |
+| Error Handling | Empty catch blocks, console-only error handling |
+| Architecture | God files (>500 lines), function sprawl (>15 functions) |
+| Engineering | @ts-ignore, synchronous I/O, array index as React key |
+| Hardcoded Values | Hardcoded URLs that should be config |
+
+```bash
+# Scan with colored terminal output
+npx forge-ai-init migrate
+
+# Machine-readable JSON output
+npx forge-ai-init migrate --json
+
+# Scan a specific directory
+npx forge-ai-init migrate --dir /path/to/project
+```
+
 ## Legacy Migration Mode
 
 Use `--migrate` to add governance to existing legacy projects. This mode adds:
