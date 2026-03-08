@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { detectStack } from './detector.js';
 import { generate } from './generator.js';
@@ -127,41 +128,143 @@ function parseTools(value?: string): AITool[] {
   return tools as AITool[];
 }
 
-function main(): void {
-  const opts = parseArgs(process.argv.slice(2));
-
-  if (opts['help']) {
-    printUsage();
-    return;
+function printResult(
+  projectDir: string,
+  result: { created: string[]; skipped: string[] },
+  dryRun: boolean,
+  force: boolean,
+): void {
+  if (result.created.length > 0) {
+    const verb = dryRun ? 'Would create' : 'Created';
+    p.log.success(`${verb}:`);
+    for (const f of result.created) {
+      const rel = f.replace(projectDir + '/', '');
+      console.log(`    ${pc.green('+')} ${rel}`);
+    }
   }
 
-  const projectDir = resolve((opts['dir'] as string) ?? '.');
-  const tier = parseTier(opts['tier'] as string | undefined);
-  const tools = parseTools(opts['tools'] as string | undefined);
-  const force = opts['force'] === true;
-  const dryRun = opts['dry-run'] === true;
+  if (result.skipped.length > 0) {
+    p.log.warn('Skipped (already exists):');
+    for (const f of result.skipped) {
+      const rel = f.replace(projectDir + '/', '');
+      console.log(`    ${pc.yellow('~')} ${rel}`);
+    }
+    if (!force) {
+      p.log.info('Use --force to overwrite existing files');
+    }
+  }
 
+  if (result.created.length === 0 && result.skipped.length === 0) {
+    p.log.info('Nothing to generate.');
+  }
+}
+
+async function runInteractive(
+  projectDir: string,
+  stack: DetectedStack,
+  force: boolean,
+  dryRun: boolean,
+): Promise<void> {
+  p.intro(pc.bgMagenta(pc.white(' forge-ai-init ')));
+
+  p.log.info('Detected stack:');
+  console.log(formatStack(stack));
+
+  const tier = await p.select({
+    message: 'Governance tier',
+    options: [
+      {
+        value: 'lite' as Tier,
+        label: 'Lite',
+        hint: 'Rules + hooks — solo dev / prototype',
+      },
+      {
+        value: 'standard' as Tier,
+        label: 'Standard',
+        hint: 'Rules + skills + MCP + CI — team / production',
+      },
+      {
+        value: 'enterprise' as Tier,
+        label: 'Enterprise',
+        hint: 'Full governance stack — org / regulated',
+      },
+    ],
+    initialValue: 'standard' as Tier,
+  });
+
+  if (p.isCancel(tier)) {
+    p.cancel('Cancelled.');
+    process.exit(0);
+  }
+
+  const tools = await p.multiselect({
+    message: 'AI tools to configure',
+    options: [
+      { value: 'claude' as AITool, label: 'Claude Code', hint: 'CLAUDE.md + settings + skills + MCP' },
+      { value: 'cursor' as AITool, label: 'Cursor', hint: '.cursorrules' },
+      { value: 'windsurf' as AITool, label: 'Windsurf', hint: '.windsurfrules' },
+      { value: 'copilot' as AITool, label: 'GitHub Copilot', hint: 'copilot-instructions.md' },
+    ],
+    initialValues: ['claude' as AITool],
+    required: true,
+  });
+
+  if (p.isCancel(tools)) {
+    p.cancel('Cancelled.');
+    process.exit(0);
+  }
+
+  const confirmed = await p.confirm({
+    message: `Generate ${pc.cyan(tier)} governance for ${pc.cyan(tools.join(', '))}?`,
+  });
+
+  if (p.isCancel(confirmed) || !confirmed) {
+    p.cancel('Cancelled.');
+    process.exit(0);
+  }
+
+  const s = p.spinner();
+  s.start('Generating governance files...');
+
+  const result = generate(stack, {
+    projectDir,
+    tier,
+    tools,
+    force,
+    dryRun,
+  });
+
+  s.stop('Generation complete.');
+
+  printResult(projectDir, result, dryRun, force);
+
+  if (!dryRun && result.created.length > 0) {
+    p.note(
+      '1. Review CLAUDE.md and adjust rules to your conventions\n2. Commit the governance layer to your repo',
+      'Next steps',
+    );
+  }
+
+  p.outro(pc.green('Your project now has AI governance.'));
+}
+
+function runNonInteractive(
+  projectDir: string,
+  stack: DetectedStack,
+  tier: Tier,
+  tools: AITool[],
+  force: boolean,
+  dryRun: boolean,
+): void {
   console.log('');
   console.log(
     `  ${pc.bold(pc.magenta('forge-ai-init'))} — AI Governance Layer`,
   );
   console.log('');
 
-  const stack = detectStack(projectDir);
-
   console.log(`  ${pc.dim('Detected:')}`);
   console.log(formatStack(stack));
   console.log('');
-
-  if (opts['command'] === 'check') {
-    console.log(pc.yellow('  Check mode coming soon.'));
-    return;
-  }
-
-  if (opts['command'] === 'update') {
-    console.log(pc.yellow('  Update mode coming soon.'));
-    return;
-  }
 
   console.log(
     `  ${pc.dim('Tier:')} ${pc.cyan(tier)} | ${pc.dim('Tools:')} ${pc.cyan(tools.join(', '))}`,
@@ -181,32 +284,7 @@ function main(): void {
     dryRun,
   });
 
-  if (result.created.length > 0) {
-    const verb = dryRun ? 'Would create' : 'Created';
-    console.log(`  ${pc.green(verb + ':')}`);
-    for (const f of result.created) {
-      const rel = f.replace(projectDir + '/', '');
-      console.log(`    ${pc.green('+')} ${rel}`);
-    }
-  }
-
-  if (result.skipped.length > 0) {
-    console.log('');
-    console.log(`  ${pc.yellow('Skipped (already exists):')}`);
-    for (const f of result.skipped) {
-      const rel = f.replace(projectDir + '/', '');
-      console.log(`    ${pc.yellow('~')} ${rel}`);
-    }
-    if (!force) {
-      console.log(
-        `\n  ${pc.dim('Use --force to overwrite existing files')}`,
-      );
-    }
-  }
-
-  if (result.created.length === 0 && result.skipped.length === 0) {
-    console.log(`  ${pc.dim('Nothing to generate.')}`);
-  }
+  printResult(projectDir, result, dryRun, force);
 
   console.log('');
 
@@ -221,6 +299,40 @@ function main(): void {
       '    2. Commit the governance layer to your repo',
     );
     console.log('');
+  }
+}
+
+async function main(): Promise<void> {
+  const opts = parseArgs(process.argv.slice(2));
+
+  if (opts['help']) {
+    printUsage();
+    return;
+  }
+
+  const projectDir = resolve((opts['dir'] as string) ?? '.');
+  const force = opts['force'] === true;
+  const dryRun = opts['dry-run'] === true;
+  const interactive = !opts['yes'] && !opts['tier'] && !opts['tools'];
+
+  const stack = detectStack(projectDir);
+
+  if (opts['command'] === 'check') {
+    console.log(pc.yellow('  Check mode coming soon.'));
+    return;
+  }
+
+  if (opts['command'] === 'update') {
+    console.log(pc.yellow('  Update mode coming soon.'));
+    return;
+  }
+
+  if (interactive) {
+    await runInteractive(projectDir, stack, force, dryRun);
+  } else {
+    const tier = parseTier(opts['tier'] as string | undefined);
+    const tools = parseTools(opts['tools'] as string | undefined);
+    runNonInteractive(projectDir, stack, tier, tools, force, dryRun);
   }
 }
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0] - 2026-03-08
+
+### Added
+
+- Interactive mode with @clack/prompts: tier selection, tool multiselect, confirmation
+- Default `npx forge-ai-init` now launches interactive wizard
+- GitHub Actions CI workflow: lint, typecheck, build, test, security audit
+- Publish workflow: auto-publish to npm on GitHub release
+
+### Changed
+
+- Non-interactive mode triggers with --yes, --tier, or --tools flags
+
 ## [0.1.0] - 2026-03-08
 
 ### Added
