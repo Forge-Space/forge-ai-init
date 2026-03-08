@@ -374,4 +374,114 @@ const token = "secret12345678";
     const finding = report.findings.find(f => f.rule === 'function-sprawl');
     expect(finding).toBeDefined();
   });
+
+  it('detects Go panic usage', () => {
+    writeFile(dir, 'src/main.go', 'func init() {\n    panic("failed to start")\n}\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-panic');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('error-handling');
+  });
+
+  it('detects Go empty interface', () => {
+    writeFile(dir, 'src/handler.go', 'func process(data interface{}) {}\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-empty-interface');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('type-safety');
+  });
+
+  it('detects Go goroutine leak risk', () => {
+    writeFile(dir, 'src/async.go', 'go func() {\n    doWork()\n}()\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-goroutine-leak');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('async');
+  });
+
+  it('detects Go blank import', () => {
+    writeFile(dir, 'src/init.go', 'import _ "github.com/lib/pq"\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-blank-import');
+    expect(finding).toBeDefined();
+  });
+
+  it('detects Rust unwrap', () => {
+    writeFile(dir, 'src/main.rs', 'let value = result.unwrap();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-unwrap');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('error-handling');
+  });
+
+  it('detects Rust unsafe block', () => {
+    writeFile(dir, 'src/ffi.rs', 'unsafe.deref(ptr);\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-unsafe');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects Rust todo! macro', () => {
+    writeFile(dir, 'src/lib.rs', 'fn process() {\n    todo!()\n}\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-todo-macro');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('engineering');
+  });
+
+  it('detects Rust clone usage', () => {
+    writeFile(dir, 'src/data.rs', 'let copy = original.clone();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-clone');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('low');
+  });
+
+  it('detects Rust expect', () => {
+    writeFile(dir, 'src/io.rs', 'let file = File::open("data.txt").expect("failed to open");\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-expect');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+  });
+
+  it('detects Svelte raw HTML', () => {
+    writeFile(dir, 'src/Page.svelte', '<div>{@html userContent}</div>\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'svelte-raw-html');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('counts Go func for function-sprawl', () => {
+    const funcs = Array.from({ length: 16 }, (_, i) =>
+      `func handler${i}() {}\n`
+    ).join('\n');
+    writeFile(dir, 'src/routes.go', funcs);
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'function-sprawl');
+    expect(finding).toBeDefined();
+  });
+
+  it('counts Rust fn for function-sprawl', () => {
+    const funcs = Array.from({ length: 16 }, (_, i) =>
+      `fn process_${i}() {}\n`
+    ).join('\n');
+    writeFile(dir, 'src/handlers.rs', funcs);
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'function-sprawl');
+    expect(finding).toBeDefined();
+  });
+
+  it('does not fire Go rules on TypeScript files', () => {
+    writeFile(dir, 'src/app.ts', 'const panic = () => { throw new Error("fail"); };\npanic();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-panic');
+    expect(finding).toBeUndefined();
+  });
 });
