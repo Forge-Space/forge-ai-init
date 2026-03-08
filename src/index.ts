@@ -1,7 +1,8 @@
 import { resolve } from 'node:path';
 import pc from 'picocolors';
 import { detectStack } from './detector.js';
-import type { DetectedStack } from './types.js';
+import { generate } from './generator.js';
+import type { AITool, DetectedStack, Tier } from './types.js';
 
 function formatStack(stack: DetectedStack): string {
   const lines: string[] = [];
@@ -93,6 +94,39 @@ function parseArgs(
   return opts;
 }
 
+const VALID_TIERS = ['lite', 'standard', 'enterprise'] as const;
+const VALID_TOOLS = [
+  'claude',
+  'cursor',
+  'windsurf',
+  'copilot',
+] as const;
+
+function parseTier(value?: string): Tier {
+  if (!value) return 'standard';
+  if (VALID_TIERS.includes(value as Tier)) return value as Tier;
+  console.error(
+    pc.red(`Invalid tier: ${value}. Use: ${VALID_TIERS.join(', ')}`),
+  );
+  process.exit(1);
+}
+
+function parseTools(value?: string): AITool[] {
+  if (!value) return ['claude'];
+  const tools = value.split(',').map((t) => t.trim());
+  for (const t of tools) {
+    if (!VALID_TOOLS.includes(t as AITool)) {
+      console.error(
+        pc.red(
+          `Invalid tool: ${t}. Use: ${VALID_TOOLS.join(', ')}`,
+        ),
+      );
+      process.exit(1);
+    }
+  }
+  return tools as AITool[];
+}
+
 function main(): void {
   const opts = parseArgs(process.argv.slice(2));
 
@@ -102,6 +136,10 @@ function main(): void {
   }
 
   const projectDir = resolve((opts['dir'] as string) ?? '.');
+  const tier = parseTier(opts['tier'] as string | undefined);
+  const tools = parseTools(opts['tools'] as string | undefined);
+  const force = opts['force'] === true;
+  const dryRun = opts['dry-run'] === true;
 
   console.log('');
   console.log(
@@ -116,18 +154,74 @@ function main(): void {
   console.log('');
 
   if (opts['command'] === 'check') {
-    console.log(pc.yellow('  Check mode not yet implemented.'));
+    console.log(pc.yellow('  Check mode coming soon.'));
     return;
   }
 
   if (opts['command'] === 'update') {
-    console.log(pc.yellow('  Update mode not yet implemented.'));
+    console.log(pc.yellow('  Update mode coming soon.'));
     return;
   }
 
   console.log(
-    pc.yellow('  Generation not yet implemented. Coming soon!'),
+    `  ${pc.dim('Tier:')} ${pc.cyan(tier)} | ${pc.dim('Tools:')} ${pc.cyan(tools.join(', '))}`,
   );
+
+  if (dryRun) {
+    console.log(`  ${pc.yellow('Dry run — no files will be written')}`);
+  }
+
+  console.log('');
+
+  const result = generate(stack, {
+    projectDir,
+    tier,
+    tools,
+    force,
+    dryRun,
+  });
+
+  if (result.created.length > 0) {
+    const verb = dryRun ? 'Would create' : 'Created';
+    console.log(`  ${pc.green(verb + ':')}`);
+    for (const f of result.created) {
+      const rel = f.replace(projectDir + '/', '');
+      console.log(`    ${pc.green('+')} ${rel}`);
+    }
+  }
+
+  if (result.skipped.length > 0) {
+    console.log('');
+    console.log(`  ${pc.yellow('Skipped (already exists):')}`);
+    for (const f of result.skipped) {
+      const rel = f.replace(projectDir + '/', '');
+      console.log(`    ${pc.yellow('~')} ${rel}`);
+    }
+    if (!force) {
+      console.log(
+        `\n  ${pc.dim('Use --force to overwrite existing files')}`,
+      );
+    }
+  }
+
+  if (result.created.length === 0 && result.skipped.length === 0) {
+    console.log(`  ${pc.dim('Nothing to generate.')}`);
+  }
+
+  console.log('');
+
+  if (!dryRun && result.created.length > 0) {
+    console.log(`  ${pc.green('Done!')} Your project now has AI governance.`);
+    console.log('');
+    console.log(`  ${pc.dim('Next steps:')}`);
+    console.log(
+      '    1. Review CLAUDE.md and adjust rules to your conventions',
+    );
+    console.log(
+      '    2. Commit the governance layer to your repo',
+    );
+    console.log('');
+  }
 }
 
 main();
