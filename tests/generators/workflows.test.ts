@@ -76,6 +76,42 @@ describe('generateWorkflows', () => {
     });
   });
 
+  describe('Enterprise workflows', () => {
+    it('generates scorecard and policy-check for enterprise', () => {
+      const files = generateWorkflows(makeStack(), 'enterprise');
+      const paths = files.map((f) => f.path);
+      expect(paths).toContain('.github/workflows/scorecard.yml');
+      expect(paths).toContain('.github/workflows/policy-check.yml');
+    });
+  });
+
+  describe('Migration workflows', () => {
+    it('generates migration-gate.yml when migrate is true', () => {
+      const files = generateWorkflows(makeStack(), 'standard', undefined, true);
+      const gate = files.find((f) => f.path.includes('migration-gate'));
+      expect(gate).toBeDefined();
+      expect(gate!.content).toContain('Migration Quality Gate');
+      expect(gate!.content).toContain('forge-ai-init check');
+      expect(gate!.content).toContain('forge-policy');
+    });
+
+    it('skips migration-gate when migrate is false', () => {
+      const files = generateWorkflows(makeStack(), 'standard');
+      const gate = files.find((f) => f.path.includes('migration-gate'));
+      expect(gate).toBeUndefined();
+    });
+
+    it('enterprise + migrate generates all workflows', () => {
+      const files = generateWorkflows(makeStack(), 'enterprise', undefined, true);
+      const paths = files.map((f) => f.path);
+      expect(paths).toContain('.github/workflows/ci.yml');
+      expect(paths).toContain('.github/workflows/secret-scan.yml');
+      expect(paths).toContain('.github/workflows/scorecard.yml');
+      expect(paths).toContain('.github/workflows/policy-check.yml');
+      expect(paths).toContain('.github/workflows/migration-gate.yml');
+    });
+  });
+
   describe('GitLab CI', () => {
     it('generates .gitlab-ci.yml instead of GitHub workflows', () => {
       const files = generateWorkflows(

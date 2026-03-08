@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.6.0] - 2026-03-08
+
+### Added
+
+- **Progressive Quality Gate Policies** — phased migration enforcement with escalating thresholds
+  - Phase 1 (Initial): 40% quality threshold — critical security and basic tests
+  - Phase 2 (Stabilization): 60% threshold — linting, type safety, test coverage
+  - Phase 3 (Production): 80% threshold — full governance enforcement
+  - Characterization tests required before module migration
+  - ADR required for migration strategy changes
+  - Dependency modernization check for EOL packages
+- **Migration Scorecard Config** — phase-aware scorecard with per-phase focus areas and reduced initial threshold
+- **Migration Quality Gate CI Workflow** — `migration-gate.yml` GitHub Actions workflow running governance audit + migration policy checks on PRs
+- 10 new tests (130 total across 7 suites)
+  - 6 migration policy tests: progressive rules, phased thresholds, tier combinations
+  - 4 migration workflow tests: gate generation, enterprise + migrate, skip when not migrating
+
+### Changed
+
+- `generateWorkflows()` now passes `migrate` option through to workflow generation
+- Enterprise + migrate mode uses migration scorecard config (lower initial threshold)
+- Lite + migrate generates migration policy and scorecard (no enterprise policies)
+
 ## [0.5.0] - 2026-03-08
 
 ### Added

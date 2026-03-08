@@ -54,7 +54,12 @@ ${pc.bold('forge-ai-init')} — AI Governance Layer
 ${pc.dim('Usage:')}
   forge-ai-init [options]
   forge-ai-init check
+  forge-ai-init migrate
   forge-ai-init update
+
+${pc.dim('Commands:')}
+  ${pc.cyan('check')}        Audit governance maturity (A-F grade)
+  ${pc.cyan('migrate')}      Scan code for anti-patterns and tech debt
 
 ${pc.dim('Options:')}
   --dir <path>         Target project directory (default: .)
@@ -64,6 +69,7 @@ ${pc.dim('Options:')}
   --force              Overwrite existing files
   --dry-run            Show what would be created
   --yes                Skip interactive prompts
+  --json               Output as JSON (migrate command)
   --help               Show this help
 
 ${pc.dim('Tiers:')}
@@ -77,6 +83,8 @@ ${pc.dim('Examples:')}
   npx forge-ai-init --migrate --tier enterprise --yes
   npx forge-ai-init --dry-run
   npx forge-ai-init check
+  npx forge-ai-init migrate
+  npx forge-ai-init migrate --json
 `);
 }
 
@@ -91,7 +99,9 @@ function parseArgs(
     else if (arg === '--yes' || arg === '-y') opts['yes'] = true;
     else if (arg === '--help' || arg === '-h') opts['help'] = true;
     else if (arg === '--migrate') opts['migrate'] = true;
+    else if (arg === '--json') opts['json'] = true;
     else if (arg === 'check') opts['command'] = 'check';
+    else if (arg === 'migrate') opts['command'] = 'migrate';
     else if (arg === 'update') opts['command'] = 'update';
     else if (arg?.startsWith('--') && i + 1 < args.length)
       opts[arg.slice(2)] = args[++i] ?? '';

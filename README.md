@@ -170,6 +170,17 @@ Use `--migrate` to add governance to existing legacy projects. This mode adds:
 - **migration-audit skill** — Full codebase health assessment: code quality, architecture, tests, security, scalability risks
 - **tech-debt-review skill** — Categorized debt identification with impact/effort scoring matrix
 - **dependency-audit skill** — Security vulnerabilities, outdated packages, license compliance, bundle impact
+- **Progressive Quality Gates** — phased enforcement that increases thresholds as migration progresses:
+
+| Phase | Threshold | Focus |
+|-------|-----------|-------|
+| Initial | 40% | Critical security, basic tests |
+| Stabilization | 60% | Linting, type safety, test coverage |
+| Production | 80% | Full governance enforcement |
+
+- **Migration CI Workflow** — `migration-gate.yml` running governance audit + migration policy checks on every PR
+- **Characterization test enforcement** — blocks migration without behavioral parity tests
+- **ADR requirement** — warns on strategy changes without Architecture Decision Records
 
 ```bash
 # Add governance to a legacy project

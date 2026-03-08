@@ -136,7 +136,7 @@ function generateWorkflowFiles(
 ): void {
   if (options.tier === 'lite') return;
 
-  const workflows = generateWorkflows(stack, options.tier);
+  const workflows = generateWorkflows(stack, options.tier, undefined, options.migrate);
   for (const { path, content } of workflows) {
     writeIfNeeded(
       join(dir, path),
@@ -154,7 +154,11 @@ function generatePolicyFiles(
   options: GenerateOptions,
   result: GenerateResult,
 ): void {
-  const policies = generatePolicies(stack, options.tier);
+  const policies = generatePolicies(
+    stack,
+    options.tier,
+    options.migrate,
+  );
   for (const { path, content } of policies) {
     writeIfNeeded(
       join(dir, path),

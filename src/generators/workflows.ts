@@ -182,6 +182,7 @@ export function generateWorkflows(
   stack: DetectedStack,
   tier: Tier,
   ciProvider?: CIProvider,
+  migrate?: boolean,
 ): WorkflowFiles[] {
   const provider = ciProvider ?? stack.ciProvider;
   const files: WorkflowFiles[] = [];
@@ -214,6 +215,13 @@ export function generateWorkflows(
     files.push({
       path: '.github/workflows/policy-check.yml',
       content: policyCheckWorkflow(stack),
+    });
+  }
+
+  if (migrate) {
+    files.push({
+      path: '.github/workflows/migration-gate.yml',
+      content: migrationGateWorkflow(stack),
     });
   }
 
@@ -284,5 +292,38 @@ jobs:
       - name: Run policy check
         continue-on-error: true
         run: npx forge-policy --policy-dir .forge/policies --fail-on-block
+`;
+}
+
+function migrationGateWorkflow(_stack: DetectedStack): string {
+  return `name: Migration Quality Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  migration-gate:
+    name: Progressive Migration Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Governance audit
+        run: npx forge-ai-init check
+
+      - name: Migration policy check
+        continue-on-error: true
+        run: npx forge-policy --policy-dir .forge/policies --policy migration-progressive --fail-on-block
 `;
 }

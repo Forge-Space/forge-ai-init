@@ -107,4 +107,64 @@ describe('generatePolicies', () => {
     expect(config.toggles).toEqual([]);
     expect(config.version).toBe('1.0.0');
   });
+
+  describe('migration mode', () => {
+    it('generates migration policy for standard + migrate', () => {
+      const files = generatePolicies(baseStack, 'standard', true);
+      const paths = files.map(f => f.path);
+
+      expect(paths).toContain('.forge/policies/migration-progressive.policy.json');
+      expect(paths).toContain('.forge/scorecard.json');
+    });
+
+    it('migration policy has 6 progressive rules', () => {
+      const files = generatePolicies(baseStack, 'standard', true);
+      const mig = files.find(f => f.path.includes('migration-progressive'));
+      const policy = JSON.parse(mig!.content);
+
+      expect(policy.id).toBe('forge-migration-progressive');
+      expect(policy.rules).toHaveLength(6);
+      expect(policy.rules[0].id).toBe('mig-001');
+      expect(policy.rules[5].id).toBe('mig-006');
+    });
+
+    it('migration scorecard has phased thresholds', () => {
+      const files = generatePolicies(baseStack, 'standard', true);
+      const sc = files.find(f => f.path.includes('scorecard'));
+      const config = JSON.parse(sc!.content);
+
+      expect(config.threshold).toBe(40);
+      expect(config.phases.initial.threshold).toBe(40);
+      expect(config.phases.stabilization.threshold).toBe(60);
+      expect(config.phases.production.threshold).toBe(80);
+      expect(config.migration.requireCharacterizationTests).toBe(true);
+    });
+
+    it('enterprise + migrate uses migration scorecard', () => {
+      const files = generatePolicies(baseStack, 'enterprise', true);
+      const sc = files.find(f => f.path.includes('scorecard'));
+      const config = JSON.parse(sc!.content);
+
+      expect(config.threshold).toBe(40);
+      expect(config.phases).toBeDefined();
+    });
+
+    it('enterprise + migrate includes both enterprise and migration policies', () => {
+      const files = generatePolicies(baseStack, 'enterprise', true);
+      const paths = files.map(f => f.path);
+
+      expect(paths).toContain('.forge/policies/security.policy.json');
+      expect(paths).toContain('.forge/policies/quality.policy.json');
+      expect(paths).toContain('.forge/policies/migration-progressive.policy.json');
+    });
+
+    it('lite + migrate generates migration policy only', () => {
+      const files = generatePolicies(baseStack, 'lite', true);
+      const paths = files.map(f => f.path);
+
+      expect(paths).toContain('.forge/policies/migration-progressive.policy.json');
+      expect(paths).toContain('.forge/scorecard.json');
+      expect(paths).not.toContain('.forge/policies/security.policy.json');
+    });
+  });
 });
