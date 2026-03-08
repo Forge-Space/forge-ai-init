@@ -1,5 +1,53 @@
 # Changelog
 
+## [0.10.0] - 2026-03-08
+
+### Added
+
+- **`assess` command** — full legacy migration health assessment with 5 specialized collectors
+  - **Dependencies**: legacy packages (jQuery, Moment, etc.), excessive deps, missing lockfile, no engine constraint
+  - **Architecture**: god files (>500 lines), function sprawl (>20 per file), high coupling (>15 imports), flat structure
+  - **Security**: hardcoded secrets, AWS keys, private keys, eval/innerHTML/SQL injection, unrestricted CORS, missing .gitignore/.env
+  - **Quality**: test framework, linting, type checking, formatting, CI/CD, empty catch blocks, TODO accumulation, test coverage ratio
+  - **Migration Readiness**: legacy stack detection, global state pollution, TypeScript adoption, documentation, test safety net
+- Health score (0-100) with A-F grading per category and overall
+- Migration readiness classification: ready / needs-work / high-risk
+- Auto-detected migration strategy: strangler-fig (backends), branch-by-abstraction (frontends), parallel-run (Java)
+- JSON output mode (`--json`) for CI integration
+- 35 new assessor tests (195 total across 10 suites)
+- **`update` command** — smart re-generation of governance files
+  - Auto-detects existing tier (lite/standard/enterprise) from file structure
+  - Auto-detects existing AI tools from governance files present
+  - Auto-detects migration mode from CLAUDE.md content
+  - Only overwrites files whose content actually changed (unchanged files preserved)
+  - Supports `--tier` and `--tools` overrides for upgrading
+  - Reports updated/added/unchanged files
+- 8 new updater tests (203 total across 11 suites)
+- **Pre-commit quality gate hooks** — blocks commits below quality threshold
+  - Standard tier: score must be ≥60 to commit
+  - Enterprise tier: score must be ≥75 to commit
+  - Runs scanner automatically on `git commit` within Claude Code sessions
+- 9 new settings generator tests (212 total across 12 suites)
+
+## [0.9.0] - 2026-03-08
+
+### Added
+
+- **Scanner expansion: 25 rules across 10 categories** — up from 10 rules across 5 categories
+  - **async** (3 rules): async Promise constructor, deep promise chains (3+ `.then`), `setTimeout(fn, 0)`
+  - **react** (2 rules): fetch in useEffect without cleanup, excessive useState (4+)
+  - **type-safety** (3 rules): explicit `any` type, type assertions (`as`), non-null assertions (`!.`)
+  - **security** (2 new): `innerHTML` assignment (XSS), SQL string concatenation (injection)
+  - **engineering** (3 new): `console.log`/`debug`/`info`, TODO/FIXME/HACK/XXX markers, `forEach` + `push` pattern
+  - **scalability** (1 new): full lodash import (use `lodash/specific` for tree-shaking)
+  - **accessibility** (1 new): `<img>` without `alt` attribute
+- 15 new scanner tests (167 total across 9 suites)
+
+### Fixed
+
+- Removed dead `assess` command and orphaned assessor module references
+- Fixed promise chain regex to match arrow functions with nested parentheses
+
 ## [0.8.0] - 2026-03-08
 
 ### Added

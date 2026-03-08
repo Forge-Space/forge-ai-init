@@ -5,6 +5,7 @@ import { detectStack } from './detector.js';
 import { generate } from './generator.js';
 import { runAudit, type CheckStatus } from './checker.js';
 import { scanProject, type Severity } from './scanner.js';
+import { updateProject } from './updater.js';
 import type { AITool, DetectedStack, Tier } from './types.js';
 
 function formatStack(stack: DetectedStack): string {
@@ -61,6 +62,7 @@ ${pc.dim('Usage:')}
 ${pc.dim('Commands:')}
   ${pc.cyan('check')}        Audit governance maturity (A-F grade)
   ${pc.cyan('migrate')}      Scan code for anti-patterns and tech debt
+  ${pc.cyan('update')}       Re-generate governance files (auto-detects tier/tools)
 
 ${pc.dim('Options:')}
   --dir <path>         Target project directory (default: .)
@@ -86,6 +88,8 @@ ${pc.dim('Examples:')}
   npx forge-ai-init check
   npx forge-ai-init migrate
   npx forge-ai-init migrate --json
+  npx forge-ai-init update
+  npx forge-ai-init update --tier enterprise
 `);
 }
 
@@ -267,6 +271,78 @@ function severityColor(s: Severity): string {
     case 'low':
       return pc.dim(s);
   }
+}
+
+function runUpdateCommand(
+  projectDir: string,
+  stack: DetectedStack,
+  opts: Record<string, string | boolean>,
+): void {
+  const tierOverride = opts['tier']
+    ? parseTier(opts['tier'] as string)
+    : undefined;
+  const toolsOverride = opts['tools']
+    ? parseTools(opts['tools'] as string)
+    : undefined;
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init update'))} — Updating governance files`,
+  );
+  console.log('');
+
+  const report = updateProject(
+    projectDir,
+    stack,
+    tierOverride,
+    toolsOverride,
+  );
+
+  console.log(
+    `  ${pc.dim('Tier:')} ${pc.cyan(report.detectedTier)}`,
+  );
+  console.log(
+    `  ${pc.dim('Tools:')} ${report.detectedTools.map(t => pc.cyan(t)).join(', ')}`,
+  );
+  if (report.migrate) {
+    console.log(
+      `  ${pc.dim('Migration mode:')} ${pc.yellow('active')}`,
+    );
+  }
+  console.log('');
+
+  if (report.updated.length > 0) {
+    console.log(`  ${pc.green('Updated:')}`);
+    for (const f of report.updated) {
+      console.log(`    ${pc.green('↻')} ${f}`);
+    }
+  }
+
+  if (report.added.length > 0) {
+    console.log(`  ${pc.cyan('Added:')}`);
+    for (const f of report.added) {
+      console.log(`    ${pc.cyan('+')} ${f}`);
+    }
+  }
+
+  if (report.unchanged.length > 0) {
+    console.log(
+      `  ${pc.dim(`Unchanged: ${report.unchanged.length} files`)}`,
+    );
+  }
+
+  console.log('');
+  const total = report.updated.length + report.added.length;
+  if (total === 0) {
+    console.log(
+      `  ${pc.green('✓')} All governance files are up to date.`,
+    );
+  } else {
+    console.log(
+      `  ${pc.green('✓')} ${total} file${total === 1 ? '' : 's'} updated.`,
+    );
+  }
+  console.log('');
 }
 
 function runScanCommand(
@@ -593,7 +669,7 @@ async function main(): Promise<void> {
   }
 
   if (opts['command'] === 'update') {
-    console.log(pc.yellow('  Update mode coming soon.'));
+    runUpdateCommand(projectDir, stack, opts);
     return;
   }
 
