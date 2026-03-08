@@ -1,11 +1,16 @@
-import { resolve } from 'node:path';
-import { writeFileSync } from 'node:fs';
+import { resolve, extname } from 'node:path';
+import { writeFileSync, watch } from 'node:fs';
+import { execSync } from 'node:child_process';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { detectStack } from './detector.js';
 import { generate } from './generator.js';
 import { runAudit, type CheckStatus } from './checker.js';
-import { scanProject, type Severity } from './scanner.js';
+import {
+  scanProject,
+  scanSpecificFiles,
+  type Severity,
+} from './scanner.js';
 import { updateProject } from './updater.js';
 import { writeReport, type ReportFormat } from './reporter.js';
 import {
@@ -81,6 +86,8 @@ ${pc.dim('Options:')}
   --dry-run            Show what would be created
   --yes                Skip interactive prompts
   --json               Output as JSON (migrate/assess commands)
+  --staged             Scan only git-staged files (migrate command)
+  --watch              Watch for file changes and re-scan (migrate command)
   --output <path>      Write report to file (migrate/assess)
   --format <fmt>       Report format: json, markdown, sarif (migrate/assess)
   --help               Show this help
@@ -98,6 +105,8 @@ ${pc.dim('Examples:')}
   npx forge-ai-init check
   npx forge-ai-init migrate
   npx forge-ai-init migrate --json
+  npx forge-ai-init migrate --staged
+  npx forge-ai-init migrate --watch
   npx forge-ai-init assess
   npx forge-ai-init assess --json
   npx forge-ai-init assess --format markdown --output report.md
@@ -118,6 +127,8 @@ function parseArgs(
     else if (arg === '--help' || arg === '-h') opts['help'] = true;
     else if (arg === '--migrate') opts['migrate'] = true;
     else if (arg === '--json') opts['json'] = true;
+    else if (arg === '--staged') opts['staged'] = true;
+    else if (arg === '--watch') opts['watch'] = true;
     else if (arg === 'check') opts['command'] = 'check';
     else if (arg === 'migrate') opts['command'] = 'migrate';
     else if (arg === 'update') opts['command'] = 'update';
@@ -359,13 +370,109 @@ function runUpdateCommand(
   console.log('');
 }
 
+function getStagedFiles(dir: string): string[] {
+  try {
+    const output = execSync('git diff --cached --name-only', {
+      cwd: dir,
+      encoding: 'utf-8',
+    });
+    return output
+      .split('\n')
+      .map((f) => f.trim())
+      .filter((f) => f.length > 0);
+  } catch {
+    console.error(
+      pc.red('  Not a git repository or git not available'),
+    );
+    process.exit(1);
+  }
+}
+
+function runWatchCommand(projectDir: string): void {
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init watch'))} — Continuous Scanner`,
+  );
+  console.log(`  ${pc.dim('Watching:')} ${projectDir}`);
+  console.log(`  ${pc.dim('Press Ctrl+C to stop')}`);
+  console.log('');
+
+  let debounce: ReturnType<typeof setTimeout> | null = null;
+
+  const runScan = (): void => {
+    const report = scanProject(projectDir);
+    const now = new Date().toLocaleTimeString();
+    const gradeStr = gradeColor(report.grade);
+    const findingCount = report.findings.length;
+    const critical = report.findings.filter(
+      (f) => f.severity === 'critical',
+    ).length;
+    const high = report.findings.filter(
+      (f) => f.severity === 'high',
+    ).length;
+
+    let line =
+      `  ${pc.dim(`[${now}]`)} ${gradeStr} ${report.score}/100`;
+    line +=
+      ` | ${findingCount} finding${findingCount === 1 ? '' : 's'}`;
+    if (critical > 0)
+      line += pc.red(` (${critical} critical)`);
+    else if (high > 0)
+      line += pc.yellow(` (${high} high)`);
+    console.log(line);
+
+    for (const f of report.findings.slice(0, 3)) {
+      console.log(
+        `    ${severityColor(f.severity)} ${pc.dim(`${f.file}:${f.line}`)} ${f.message}`,
+      );
+    }
+    if (report.findings.length > 3) {
+      console.log(
+        pc.dim(
+          `    ... and ${report.findings.length - 3} more`,
+        ),
+      );
+    }
+  };
+
+  runScan();
+
+  const CODE_EXTS = new Set([
+    '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
+    '.py', '.go', '.rs', '.java', '.vue', '.svelte',
+  ]);
+
+  watch(
+    projectDir,
+    { recursive: true },
+    (_event, filename) => {
+      if (!filename) return;
+      if (!CODE_EXTS.has(extname(filename))) return;
+      if (
+        filename.includes('node_modules') ||
+        filename.includes('.git') ||
+        filename.includes('dist')
+      ) return;
+
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(runScan, 300);
+    },
+  );
+}
+
 function runScanCommand(
   projectDir: string,
   asJson: boolean,
+  staged?: boolean,
   outputPath?: string,
   format?: string,
 ): void {
-  const report = scanProject(projectDir);
+  const report = staged
+    ? scanSpecificFiles(
+        projectDir,
+        getStagedFiles(projectDir),
+      )
+    : scanProject(projectDir);
 
   if (outputPath) {
     const fmt = (format ?? 'json') as ReportFormat;
@@ -381,9 +488,10 @@ function runScanCommand(
     return;
   }
 
+  const modeLabel = staged ? ' (staged files)' : '';
   console.log('');
   console.log(
-    `  ${pc.bold(pc.magenta('forge-ai-init scan'))} — Code Anti-Pattern Scanner`,
+    `  ${pc.bold(pc.magenta('forge-ai-init scan'))} — Code Anti-Pattern Scanner${modeLabel}`,
   );
   console.log('');
   console.log(
@@ -819,9 +927,14 @@ async function main(): Promise<void> {
   }
 
   if (opts['command'] === 'migrate') {
+    if (opts['watch']) {
+      runWatchCommand(projectDir);
+      return;
+    }
     runScanCommand(
       projectDir,
       opts['json'] === true,
+      opts['staged'] === true,
       opts['output'] as string | undefined,
       opts['format'] as string | undefined,
     );

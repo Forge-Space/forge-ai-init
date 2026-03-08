@@ -1,6 +1,6 @@
 {
   "name": "forge-ai-init",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "AI Governance Layer \u2014 one command to add AI coding rules, skills, hooks, and quality gates to any project",
   "type": "module",
   "bin": {

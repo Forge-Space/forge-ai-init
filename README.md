@@ -130,6 +130,12 @@ npx forge-ai-init assess
 
 # Assess with JSON output
 npx forge-ai-init assess --json
+
+# Watch mode — continuous scanning during development
+npx forge-ai-init migrate --watch
+
+# Scan only staged files (fast pre-commit check)
+npx forge-ai-init migrate --staged
 ```
 
 ### Options
@@ -143,6 +149,8 @@ npx forge-ai-init assess --json
 | `--force` | Overwrite existing files | `false` |
 | `--dry-run` | Show what would be created | `false` |
 | `--yes` | Skip interactive prompts | `false` |
+| `--staged` | Scan only git-staged files (migrate command) | `false` |
+| `--watch` | Watch for changes and re-scan (migrate command) | `false` |
 
 ## Update Governance Files
 
@@ -230,6 +238,15 @@ npx forge-ai-init migrate --json
 
 # Scan a specific directory
 npx forge-ai-init migrate --dir /path/to/project
+
+# Watch mode — re-scans on every file change
+npx forge-ai-init migrate --watch
+
+# Scan only git-staged files (fast pre-commit check)
+npx forge-ai-init migrate --staged
+
+# Staged scan with JSON output (for pre-commit hooks)
+npx forge-ai-init migrate --staged --json
 ```
 
 ## Migration Assessment
