@@ -268,6 +268,60 @@ npx forge-ai-init assess --dir /path/to/legacy-app
 npx forge-ai-init --migrate --tier enterprise --dir /path/to/legacy-app
 ```
 
+## Configuration
+
+Customize governance rules per-project with `.forgerc.json`:
+
+```json
+{
+  "extends": "recommended",
+  "rules": {
+    "console-log": false,
+    "empty-catch": { "severity": "critical" }
+  },
+  "categories": {
+    "react": { "enabled": false }
+  },
+  "ignore": ["legacy/", "*.generated.*"],
+  "thresholds": { "commit": 70, "pr": 80, "deploy": 90 },
+  "maxFiles": 1000
+}
+```
+
+### Presets
+
+| Preset | Commit | PR | Deploy | Relaxed Rules |
+|--------|--------|----|--------|---------------|
+| `strict` | 80 | 85 | 90 | None |
+| `recommended` | 60 | 70 | 80 | None |
+| `lenient` | 40 | 50 | 60 | console-log, todo-marker, type-assertion disabled |
+
+Config is auto-generated during scaffolding with a tier-appropriate preset. Supports `.forgerc.json`, `.forgerc`, and `forge.config.json`.
+
+## Report Export
+
+Export scan results for CI/CD pipelines and compliance workflows:
+
+```bash
+# Export as SARIF (GitHub Security tab)
+npx forge-ai-init migrate --format sarif --output report.sarif
+
+# Export as Markdown
+npx forge-ai-init migrate --format markdown --output report.md
+
+# Export as JSON
+npx forge-ai-init migrate --format json --output report.json
+```
+
+SARIF reports integrate with GitHub's code scanning alerts — add to your CI workflow:
+
+```yaml
+- run: npx forge-ai-init migrate --format sarif --output results.sarif
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: results.sarif
+```
+
 ## Legacy Migration Mode
 
 Use `--migrate` to add governance to existing legacy projects. This mode adds:
