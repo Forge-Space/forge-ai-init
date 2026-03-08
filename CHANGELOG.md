@@ -29,7 +29,14 @@
   - All templates include `.gitignore`, `CLAUDE.md`, `.forgerc.json` from day one
   - Template listing with `scaffold` (no flags)
   - `--json` output for all 4 new commands
-- 60 new tests across 4 suites (378 total across 19 suites)
+- **`migrate-plan` command** — Detailed migration roadmap with actionable phases
+  - Strategy detection (Strangler Fig, Branch by Abstraction, Parallel Run, Incremental)
+  - Strangler boundary analysis — identifies god files and function sprawl as decomposition targets
+  - Dependency risk analysis — detects 11 legacy packages (moment, jquery, request, etc.) with alternatives
+  - Incremental typing plan — prioritized JS→TS file conversion ordering (entry points, utils first)
+  - Phased migration plan (Stabilize → Modernize → Harden) with quality gates per phase
+  - Estimated effort calculation based on boundary complexity, typing needs, and dependency risks
+- 79 new tests across 5 suites (397 total across 20 suites)
 
 ## [0.17.0] - 2026-03-08
 

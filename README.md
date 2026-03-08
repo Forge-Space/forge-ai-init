@@ -491,6 +491,35 @@ Every template includes `.gitignore`, `CLAUDE.md`, and `.forgerc.json` from day 
 | `ts-library`      | TypeScript library with tsup        | tsup, Jest, ESM                     |
 | `cli-tool`        | CLI tool with @clack/prompts        | @clack/prompts, picocolors, tsx     |
 
+## Migration Planning
+
+Run `migrate-plan` to generate a detailed, actionable migration roadmap:
+
+```bash
+npx forge-ai-init migrate-plan
+npx forge-ai-init migrate-plan --json
+```
+
+Analyzes your codebase and produces:
+
+- **Strategy detection** — Strangler Fig (backends), Branch by Abstraction (frontends), Parallel Run (Java), or Incremental Modernization
+- **Strangler boundaries** — god files and sprawl modules that should be decomposed first, classified by type (api/service/data/ui)
+- **Dependency risks** — detects 11 legacy packages (moment, jquery, request, lodash, bluebird, etc.) with modern replacements
+- **Typing plan** — prioritized JS→TS file conversion order (entry points and utilities first, large files last)
+- **Phased roadmap** — Stabilize (fix critical, add tests, CI) → Modernize (decompose, type, test) → Harden (full governance)
+- **Effort estimation** — calculated from boundary complexity, typing needs, and dependency risks
+
+```bash
+# Full migration workflow
+npx forge-ai-init migrate-plan                    # Get the roadmap
+npx forge-ai-init assess                          # Detailed health assessment
+npx forge-ai-init --migrate --tier enterprise     # Add governance layer
+npx forge-ai-init baseline                        # Set starting baseline
+# ... do the work ...
+npx forge-ai-init baseline --compare              # Track progress
+npx forge-ai-init gate --phase stabilization      # Verify gate passes
+```
+
 ## Legacy Migration Mode
 
 Use `--migrate` to add governance to existing legacy projects. This mode adds:

@@ -21,6 +21,7 @@ import { saveBaseline, compareBaseline } from './baseline.js';
 import { generatePlan } from './planner.js';
 import { runDoctor, type HealthCheck } from './doctor.js';
 import { runGate } from './gate.js';
+import { analyzeMigration } from './migrate-analyzer.js';
 import {
   scaffold,
   TEMPLATE_LIST,
@@ -84,6 +85,7 @@ ${pc.dim('Usage:')}
   forge-ai-init doctor
   forge-ai-init gate
   forge-ai-init scaffold
+  forge-ai-init migrate-plan
 
 ${pc.dim('Commands:')}
   ${pc.cyan('check')}        Audit governance maturity (A-F grade)
@@ -95,6 +97,7 @@ ${pc.dim('Commands:')}
   ${pc.cyan('doctor')}       Continuous architecture health monitoring
   ${pc.cyan('gate')}         CI/CD quality gate enforcement
   ${pc.cyan('scaffold')}     Create new project from golden path template
+  ${pc.cyan('migrate-plan')} Generate detailed migration roadmap with phases
 
 ${pc.dim('Options:')}
   --dir <path>         Target project directory (default: .)
@@ -145,6 +148,8 @@ ${pc.dim('Examples:')}
   npx forge-ai-init gate
   npx forge-ai-init gate --phase production --threshold 80
   npx forge-ai-init scaffold --template nextjs-app --name my-app
+  npx forge-ai-init migrate-plan
+  npx forge-ai-init migrate-plan --json
 `);
 }
 
@@ -172,6 +177,7 @@ function parseArgs(
     else if (arg === 'doctor') opts['command'] = 'doctor';
     else if (arg === 'gate') opts['command'] = 'gate';
     else if (arg === 'scaffold') opts['command'] = 'scaffold';
+    else if (arg === 'migrate-plan') opts['command'] = 'migrate-plan';
     else if (arg?.startsWith('--') && i + 1 < args.length)
       opts[arg.slice(2)] = args[++i] ?? '';
   }
@@ -1341,6 +1347,109 @@ function runScaffoldCommand(
   console.log('');
 }
 
+function runMigratePlanCommand(
+  projectDir: string,
+  stack: DetectedStack,
+  asJson: boolean,
+): void {
+  const plan = analyzeMigration(projectDir, stack);
+
+  if (asJson) {
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init migrate-plan'))} — Migration Roadmap`,
+  );
+  console.log('');
+
+  console.log(
+    `  ${pc.bold('Strategy:')} ${pc.cyan(plan.strategy.name)}`,
+  );
+  console.log(`    ${plan.strategy.description}`);
+  console.log(
+    `    ${pc.dim('For:')} ${plan.strategy.applicableTo}`,
+  );
+  console.log(
+    `    ${pc.dim('Estimated effort:')} ${pc.yellow(plan.estimatedEffort)}`,
+  );
+  console.log('');
+
+  if (plan.boundaries.length > 0) {
+    console.log(
+      `  ${pc.bold('Strangler Boundaries')} (${plan.boundaries.length} modules):`,
+    );
+    for (const b of plan.boundaries) {
+      const cplx =
+        b.complexity === 'high'
+          ? pc.red(b.complexity)
+          : b.complexity === 'medium'
+            ? pc.yellow(b.complexity)
+            : pc.green(b.complexity);
+      console.log(
+        `    ${cplx} ${b.module} [${b.type}]`,
+      );
+      console.log(`      ${pc.dim(b.reason)}`);
+    }
+    console.log('');
+  }
+
+  if (plan.dependencyRisks.length > 0) {
+    console.log(
+      `  ${pc.bold('Dependency Risks')} (${plan.dependencyRisks.length}):`,
+    );
+    for (const d of plan.dependencyRisks) {
+      const sev = severityColor(d.severity);
+      console.log(`    ${sev} ${d.name}@${d.currentVersion}`);
+      console.log(
+        `      ${pc.dim('→')} ${d.recommendation}`,
+      );
+    }
+    console.log('');
+  }
+
+  if (plan.typingPlan.length > 0) {
+    console.log(
+      `  ${pc.bold('Typing Plan')} (${plan.typingPlan.length} files):`,
+    );
+    for (const t of plan.typingPlan.slice(0, 10)) {
+      const pri =
+        t.priority === 'high'
+          ? pc.red('[HIGH]')
+          : t.priority === 'medium'
+            ? pc.yellow('[MED]')
+            : pc.dim('[LOW]');
+      console.log(
+        `    ${pri} ${t.file} (${t.estimatedLines} lines)`,
+      );
+      console.log(`      ${pc.dim(t.reason)}`);
+    }
+    if (plan.typingPlan.length > 10) {
+      console.log(
+        pc.dim(
+          `    ... and ${plan.typingPlan.length - 10} more files`,
+        ),
+      );
+    }
+    console.log('');
+  }
+
+  console.log(`  ${pc.bold('Migration Phases:')}`);
+  for (const phase of plan.phases) {
+    console.log(`  ${pc.cyan(phase.name)}`);
+    console.log(`    ${phase.description}`);
+    for (const task of phase.tasks) {
+      console.log(`    ${pc.dim('•')} ${task}`);
+    }
+    console.log(
+      `    ${pc.dim('Gate:')} ${phase.gate}`,
+    );
+    console.log('');
+  }
+}
+
 async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
 
@@ -1417,6 +1526,15 @@ async function main(): Promise<void> {
       projectDir,
       opts['phase'] as string | undefined,
       thresholdVal,
+      opts['json'] === true,
+    );
+    return;
+  }
+
+  if (opts['command'] === 'migrate-plan') {
+    runMigratePlanCommand(
+      projectDir,
+      stack,
       opts['json'] === true,
     );
     return;
