@@ -94,7 +94,8 @@ export function compareBaseline(dir: string): BaselineComparison | null {
 
   if (!data || data.history.length === 0) return null;
 
-  const previous = data.history[data.history.length - 1]!;
+  const previous = data.history[data.history.length - 1];
+  if (!previous) return null;
 
   const categoryChanges: CategoryChange[] = [];
   const allCategories = new Set([
