@@ -69,7 +69,7 @@ Auto-detects your project's language, framework, build tool, package manager, te
 
 | Category        | Supported                                                                                                   |
 | --------------- | ----------------------------------------------------------------------------------------------------------- |
-| Languages       | TypeScript, JavaScript, Python, Go, Rust, Java                                                              |
+| Languages       | TypeScript, JavaScript, Python, Go, Rust, Java, Kotlin                                                      |
 | Frameworks      | Next.js, React, Vue, Svelte, Express, NestJS, FastAPI, Django, Flask, Spring, Astro, Remix, Nuxt, SvelteKit |
 | Package Mgrs    | npm, pnpm, yarn, bun, pip, poetry, cargo, go                                                                |
 | CI/CD           | GitHub Actions, GitLab CI, CircleCI, Jenkins                                                                |
@@ -217,7 +217,7 @@ Run `migrate` to scan source code for anti-patterns, tech debt, and security iss
 npx forge-ai-init migrate
 ```
 
-Detects 53 patterns across 10 categories (language-aware — rules only fire on matching file types):
+Detects 66 patterns across 10 categories (language-aware — rules only fire on matching file types):
 
 | Category         | What it finds                                                                                                                                              |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -234,6 +234,8 @@ Detects 53 patterns across 10 categories (language-aware — rules only fire on 
 | **Python**       | Bare except, except-pass, os.system, subprocess shell, pickle, SQL format injection, typing.Any, type-ignore, import \*, globals, mutable defaults, assert |
 | **Go**           | Bare error return, panic, empty interface, SQL concatenation, blank import, global mutex, goroutine leak                                                   |
 | **Rust**         | Unsafe blocks, unwrap/expect, excessive clone, todo! macro, allow(lint) suppression                                                                        |
+| **Java**         | System.out.println, raw JDBC Statement, @SuppressWarnings, Thread.sleep, hardcoded credentials, legacy Date, empty catch, printStackTrace                  |
+| **Kotlin**       | `!!` non-null assertion, runBlocking, empty catch, @Suppress, TODO markers                                                                                 |
 | **Svelte**       | {@html} XSS risk, reactive event handlers, reactive fetch calls                                                                                            |
 
 ```bash

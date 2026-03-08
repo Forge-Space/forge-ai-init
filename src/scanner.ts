@@ -484,6 +484,110 @@ const RULES: Rule[] = [
     message: 'Fetch in reactive block — may trigger on every state change, use onMount',
     extensions: ['.svelte'],
   },
+  {
+    pattern: /System\.(out|err)\.print(ln)?\s*\(/g,
+    category: 'engineering',
+    severity: 'medium',
+    rule: 'java-sysout',
+    message: 'System.out/err.println — use a logging framework (SLF4J, Log4j)',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /Statement\s*\w*\s*=|\.createStatement\s*\(/g,
+    category: 'security',
+    severity: 'critical',
+    rule: 'java-raw-statement',
+    message: 'Raw JDBC Statement — use PreparedStatement to prevent SQL injection',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /@SuppressWarnings\s*\(/g,
+    category: 'engineering',
+    severity: 'low',
+    rule: 'java-suppress-warnings',
+    message: '@SuppressWarnings hides issues — fix the warning instead',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /Thread\.sleep\s*\(/g,
+    category: 'scalability',
+    severity: 'medium',
+    rule: 'java-thread-sleep',
+    message: 'Thread.sleep blocks the thread — use ScheduledExecutorService or async',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /(?:password|secret|api[_-]?key)\s*=\s*"[^"]+"/gi,
+    category: 'security',
+    severity: 'critical',
+    rule: 'java-hardcoded-credential',
+    message: 'Hardcoded credential — use environment variables or a secrets manager',
+    extensions: ['.java', '.properties', '.yml', '.yaml'],
+  },
+  {
+    pattern: /new\s+Date\s*\(\s*\)|new\s+SimpleDateFormat\s*\(/g,
+    category: 'engineering',
+    severity: 'low',
+    rule: 'java-legacy-date',
+    message: 'Legacy Date/SimpleDateFormat — use java.time (LocalDate, DateTimeFormatter)',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /catch\s*\(\s*\w+\s+\w+\s*\)\s*\{\s*\}/g,
+    category: 'error-handling',
+    severity: 'high',
+    rule: 'java-empty-catch',
+    message: 'Empty catch block swallows exceptions silently',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /\.printStackTrace\s*\(\s*\)/g,
+    category: 'engineering',
+    severity: 'medium',
+    rule: 'java-print-stacktrace',
+    message: '.printStackTrace() — use a logger to capture exceptions',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /!!/g,
+    category: 'error-handling',
+    severity: 'high',
+    rule: 'kotlin-non-null-assertion',
+    message: '!! non-null assertion crashes on null — use safe calls or elvis operator',
+    extensions: ['.kt', '.kts'],
+  },
+  {
+    pattern: /runBlocking\s*\{/g,
+    category: 'scalability',
+    severity: 'high',
+    rule: 'kotlin-run-blocking',
+    message: 'runBlocking blocks the thread — use suspend functions or coroutineScope',
+    extensions: ['.kt', '.kts'],
+  },
+  {
+    pattern: /catch\s*\(\s*\w+\s*:\s*\w+\s*\)\s*\{\s*\}/g,
+    category: 'error-handling',
+    severity: 'high',
+    rule: 'kotlin-empty-catch',
+    message: 'Empty catch block swallows exceptions silently',
+    extensions: ['.kt', '.kts'],
+  },
+  {
+    pattern: /@Suppress\s*\(/g,
+    category: 'engineering',
+    severity: 'low',
+    rule: 'kotlin-suppress',
+    message: '@Suppress hides issues — fix the warning instead',
+    extensions: ['.kt', '.kts'],
+  },
+  {
+    pattern: /TODO\s*\(|FIXME/g,
+    category: 'engineering',
+    severity: 'low',
+    rule: 'kotlin-todo',
+    message: 'TODO/FIXME marker — resolve before shipping',
+    extensions: ['.kt', '.kts'],
+  },
 ];
 
 const CODE_EXTENSIONS = new Set([
@@ -497,6 +601,8 @@ const CODE_EXTENSIONS = new Set([
   '.go',
   '.rs',
   '.java',
+  '.kt',
+  '.kts',
   '.vue',
   '.svelte',
 ]);
@@ -589,7 +695,11 @@ function checkFileSize(
       ? /^func\s+/gm
       : ext === '.rs'
         ? /(?:^|\n)\s*(?:pub\s+)?(?:async\s+)?fn\s+\w+/g
-        : /(?:function\s+\w+|(?:export\s+)?(?:const|let)\s+\w+\s*=\s*(?:async\s*)?\()/g;
+        : ext === '.java'
+          ? /(?:public|private|protected|static|\s)+\s+\w+\s+\w+\s*\(/gm
+          : ext === '.kt' || ext === '.kts'
+            ? /(?:^|\n)\s*(?:(?:private|public|internal|protected|override)\s+)*(?:suspend\s+)?fun\s+/g
+            : /(?:function\s+\w+|(?:export\s+)?(?:const|let)\s+\w+\s*=\s*(?:async\s*)?\()/g;
   const fnCount = (content.match(fnPattern) || []).length;
   if (fnCount > 15) {
     findings.push({
