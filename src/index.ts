@@ -17,6 +17,7 @@ import {
   assessProject,
   type AssessmentReport,
 } from './assessor.js';
+import { saveBaseline, compareBaseline } from './baseline.js';
 import type { AITool, DetectedStack, Tier } from './types.js';
 
 function formatStack(stack: DetectedStack): string {
@@ -70,12 +71,14 @@ ${pc.dim('Usage:')}
   forge-ai-init migrate
   forge-ai-init assess
   forge-ai-init update
+  forge-ai-init baseline
 
 ${pc.dim('Commands:')}
   ${pc.cyan('check')}        Audit governance maturity (A-F grade)
   ${pc.cyan('migrate')}      Scan code for anti-patterns and tech debt
   ${pc.cyan('assess')}       Full migration health assessment (5 categories)
   ${pc.cyan('update')}       Re-generate governance files (auto-detects tier/tools)
+  ${pc.cyan('baseline')}     Save score snapshot or compare against previous baseline
 
 ${pc.dim('Options:')}
   --dir <path>         Target project directory (default: .)
@@ -90,6 +93,7 @@ ${pc.dim('Options:')}
   --watch              Watch for file changes and re-scan (migrate command)
   --output <path>      Write report to file (migrate/assess)
   --format <fmt>       Report format: json, markdown, sarif (migrate/assess)
+  --compare            Compare current scan against saved baseline
   --help               Show this help
 
 ${pc.dim('Tiers:')}
@@ -112,6 +116,8 @@ ${pc.dim('Examples:')}
   npx forge-ai-init assess --format markdown --output report.md
   npx forge-ai-init update
   npx forge-ai-init update --tier enterprise
+  npx forge-ai-init baseline
+  npx forge-ai-init baseline --compare
 `);
 }
 
@@ -129,10 +135,12 @@ function parseArgs(
     else if (arg === '--json') opts['json'] = true;
     else if (arg === '--staged') opts['staged'] = true;
     else if (arg === '--watch') opts['watch'] = true;
+    else if (arg === '--compare') opts['compare'] = true;
     else if (arg === 'check') opts['command'] = 'check';
     else if (arg === 'migrate') opts['command'] = 'migrate';
     else if (arg === 'update') opts['command'] = 'update';
     else if (arg === 'assess') opts['command'] = 'assess';
+    else if (arg === 'baseline') opts['command'] = 'baseline';
     else if (arg?.startsWith('--') && i + 1 < args.length)
       opts[arg.slice(2)] = args[++i] ?? '';
   }
@@ -904,6 +912,112 @@ function runNonInteractive(
   }
 }
 
+function formatScoreDelta(n: number): string {
+  if (n > 0) return pc.green(`+${n}`);
+  if (n < 0) return pc.red(`${n}`);
+  return pc.dim('0');
+}
+
+function formatFindingDelta(n: number): string {
+  if (n > 0) return pc.red(`+${n}`);
+  if (n < 0) return pc.green(`${n}`);
+  return pc.dim('0');
+}
+
+function runBaselineCommand(
+  projectDir: string,
+  compare: boolean,
+): void {
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init baseline'))}`,
+  );
+  console.log('');
+
+  if (compare) {
+    const result = compareBaseline(projectDir);
+    if (!result) {
+      console.log(
+        pc.yellow(
+          '  No baseline found. Run `forge-ai-init baseline` first.',
+        ),
+      );
+      console.log('');
+      return;
+    }
+
+    const arrow =
+      result.scoreDelta > 0
+        ? pc.green('▲')
+        : result.scoreDelta < 0
+          ? pc.red('▼')
+          : pc.dim('=');
+
+    console.log(
+      `  Score: ${result.previous.score} → ${result.current.score} (${arrow} ${formatScoreDelta(result.scoreDelta)})`,
+    );
+    console.log(
+      `  Grade: ${result.previous.grade} → ${result.current.grade}${result.gradeChanged ? pc.yellow(' changed') : ''}`,
+    );
+    console.log(
+      `  Files: ${result.previous.filesScanned} → ${result.current.filesScanned}`,
+    );
+    console.log('');
+
+    if (result.resolvedFindings > 0) {
+      console.log(
+        `  ${pc.green(`✓ ${result.resolvedFindings} findings resolved`)}`,
+      );
+    }
+    if (result.newFindings > 0) {
+      console.log(
+        `  ${pc.red(`✗ ${result.newFindings} new findings`)}`,
+      );
+    }
+
+    if (result.categoryChanges.length > 0) {
+      console.log('');
+      console.log(`  ${pc.dim('Category changes:')}`);
+      for (const c of result.categoryChanges) {
+        console.log(
+          `    ${c.category.padEnd(20)} ${c.previousCount} → ${c.currentCount} (${formatFindingDelta(c.delta)})`,
+        );
+      }
+    }
+
+    if (
+      result.resolvedFindings === 0 &&
+      result.newFindings === 0
+    ) {
+      console.log(`  ${pc.dim('No changes since last baseline.')}`);
+    }
+    console.log('');
+    return;
+  }
+
+  const { entry, isFirst } = saveBaseline(projectDir);
+  console.log(
+    `  ${pc.green('✓')} Baseline saved to ${pc.dim('.forge/baseline.json')}`,
+  );
+  console.log('');
+  console.log(`  Score: ${pc.bold(String(entry.score))}`);
+  console.log(`  Grade: ${pc.bold(entry.grade)}`);
+  console.log(`  Files: ${entry.filesScanned}`);
+  console.log(`  Findings: ${entry.findingCount}`);
+  console.log('');
+
+  if (isFirst) {
+    console.log(
+      `  ${pc.dim('First baseline recorded. Run with --compare after making changes.')}`,
+    );
+  } else {
+    console.log(
+      `  ${pc.dim('Snapshot appended to history. Use --compare to see deltas.')}`,
+    );
+  }
+  console.log('');
+}
+
 async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
 
@@ -954,6 +1068,11 @@ async function main(): Promise<void> {
 
   if (opts['command'] === 'update') {
     runUpdateCommand(projectDir, stack, opts);
+    return;
+  }
+
+  if (opts['command'] === 'baseline') {
+    runBaselineCommand(projectDir, opts['compare'] === true);
     return;
   }
 

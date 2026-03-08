@@ -5,6 +5,11 @@
 ### Added
 
 - **CI/CD integration guide** in README — GitHub Actions (quality gate, SARIF upload, staged scan, full pipeline), GitLab CI, pre-commit hooks, configurable thresholds, badge generation
+- **`baseline` command** — track quality score over time (closes #14)
+  - `forge-ai-init baseline` saves scan snapshot to `.forge/baseline.json`
+  - `forge-ai-init baseline --compare` shows score delta, per-category changes, new/resolved findings
+  - History array for trend tracking across multiple snapshots
+- 12 new baseline tests (302 total across 15 suites)
 
 ## [0.15.0] - 2026-03-08
 
