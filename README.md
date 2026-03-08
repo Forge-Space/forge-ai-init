@@ -202,7 +202,7 @@ Run `migrate` to scan source code for anti-patterns, tech debt, and security iss
 npx forge-ai-init migrate
 ```
 
-Detects 25 patterns across 10 categories:
+Detects 37 patterns across 10 categories (language-aware — rules only fire on matching file types):
 
 | Category | What it finds |
 |----------|--------------|
@@ -216,6 +216,7 @@ Detects 25 patterns across 10 categories:
 | Scalability | Full lodash import |
 | Accessibility | Images without alt text |
 | Hardcoded Values | Hardcoded URLs that should be config |
+| **Python** | Bare except, except-pass, os.system, subprocess shell, pickle, SQL format injection, typing.Any, type-ignore, import *, globals, mutable defaults, assert |
 
 ```bash
 # Scan with colored terminal output

@@ -266,4 +266,112 @@ const token = "secret12345678";
     expect(finding).toBeDefined();
     expect(finding!.severity).toBe('medium');
   });
+
+  it('does not fire TS rules on Python files', () => {
+    writeFile(dir, 'src/app.py', 'x: any = 42\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'any-type');
+    expect(finding).toBeUndefined();
+  });
+
+  it('detects bare except in Python', () => {
+    writeFile(dir, 'src/handler.py', 'try:\n    do_work()\nexcept:\n    pass\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'bare-except');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('error-handling');
+  });
+
+  it('detects except Exception: pass in Python', () => {
+    writeFile(dir, 'src/silent.py', 'try:\n    risky()\nexcept Exception as e:\n    pass\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'except-pass');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects subprocess shell=True in Python', () => {
+    writeFile(dir, 'src/cmd.py', 'subprocess.run(cmd, shell=True)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'subprocess-shell');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects pickle usage in Python', () => {
+    writeFile(dir, 'src/data.py', 'import pickle\ndata = pickle.loads(raw)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'pickle-usage');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects SQL format string in Python', () => {
+    writeFile(dir, 'src/db.py', 'query = "SELECT * FROM users WHERE id = {}".format(user_id)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'sql-format-string');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects typing.Any import in Python', () => {
+    writeFile(dir, 'src/types.py', 'from typing import Any, Dict\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-any-type');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('type-safety');
+  });
+
+  it('detects type: ignore in Python', () => {
+    writeFile(dir, 'src/hack.py', 'result = bad_function()  # type: ignore\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'type-ignore');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects wildcard import in Python', () => {
+    writeFile(dir, 'src/views.py', 'from django.shortcuts import *\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'wildcard-import');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+  });
+
+  it('detects global variable in Python', () => {
+    writeFile(dir, 'src/state.py', 'def update():\n    global counter\n    counter += 1\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'global-variable');
+    expect(finding).toBeDefined();
+    expect(finding!.category).toBe('architecture');
+  });
+
+  it('detects mutable default argument in Python', () => {
+    writeFile(dir, 'src/func.py', 'def add_item(item, items=[]):\n    items.append(item)\n    return items\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'mutable-default-arg');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects assert in production Python code', () => {
+    writeFile(dir, 'src/validate.py', 'assert user.is_active\nprocess(user)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'assert-in-production');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+  });
+
+  it('counts Python def functions for function-sprawl', () => {
+    const defs = Array.from({ length: 16 }, (_, i) =>
+      `def func_${i}():\n    pass\n`
+    ).join('\n');
+    writeFile(dir, 'src/sprawl.py', defs);
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'function-sprawl');
+    expect(finding).toBeDefined();
+  });
 });
