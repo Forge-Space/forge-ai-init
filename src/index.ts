@@ -1,5 +1,5 @@
 import { resolve, extname } from 'node:path';
-import { writeFileSync, watch } from 'node:fs';
+import { writeFileSync, mkdirSync, watch } from 'node:fs';
 import { execSync } from 'node:child_process';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
@@ -27,6 +27,11 @@ import {
   TEMPLATE_LIST,
   type TemplateId,
 } from './scaffold.js';
+import {
+  generateCiPipeline,
+  type CiOptions,
+} from './ci-command.js';
+import { analyzeDiff } from './diff-analyzer.js';
 import type { AITool, DetectedStack, Tier } from './types.js';
 
 function formatStack(stack: DetectedStack): string {
@@ -86,6 +91,8 @@ ${pc.dim('Usage:')}
   forge-ai-init gate
   forge-ai-init scaffold
   forge-ai-init migrate-plan
+  forge-ai-init ci
+  forge-ai-init diff
 
 ${pc.dim('Commands:')}
   ${pc.cyan('check')}        Audit governance maturity (A-F grade)
@@ -98,6 +105,8 @@ ${pc.dim('Commands:')}
   ${pc.cyan('gate')}         CI/CD quality gate enforcement
   ${pc.cyan('scaffold')}     Create new project from golden path template
   ${pc.cyan('migrate-plan')} Generate detailed migration roadmap with phases
+  ${pc.cyan('ci')}           Generate CI pipeline with quality gates
+  ${pc.cyan('diff')}         PR-level quality delta analysis
 
 ${pc.dim('Options:')}
   --dir <path>         Target project directory (default: .)
@@ -117,6 +126,8 @@ ${pc.dim('Options:')}
   --threshold <n>      Quality gate minimum score (0-100)
   --template <id>      Scaffold template: nextjs-app, express-api, etc.
   --name <name>        Project name (scaffold command)
+  --provider <p>       CI provider: github-actions, gitlab-ci, bitbucket
+  --base <branch>      Base branch for diff comparison (default: main)
   --help               Show this help
 
 ${pc.dim('Tiers:')}
@@ -150,6 +161,11 @@ ${pc.dim('Examples:')}
   npx forge-ai-init scaffold --template nextjs-app --name my-app
   npx forge-ai-init migrate-plan
   npx forge-ai-init migrate-plan --json
+  npx forge-ai-init ci --provider github-actions
+  npx forge-ai-init ci --provider gitlab-ci --phase production
+  npx forge-ai-init diff
+  npx forge-ai-init diff --base develop --json
+  npx forge-ai-init diff --staged
 `);
 }
 
@@ -178,6 +194,8 @@ function parseArgs(
     else if (arg === 'gate') opts['command'] = 'gate';
     else if (arg === 'scaffold') opts['command'] = 'scaffold';
     else if (arg === 'migrate-plan') opts['command'] = 'migrate-plan';
+    else if (arg === 'ci') opts['command'] = 'ci';
+    else if (arg === 'diff') opts['command'] = 'diff';
     else if (arg?.startsWith('--') && i + 1 < args.length)
       opts[arg.slice(2)] = args[++i] ?? '';
   }
@@ -1450,6 +1468,155 @@ function runMigratePlanCommand(
   }
 }
 
+const VALID_PROVIDERS = [
+  'github-actions',
+  'gitlab-ci',
+  'bitbucket',
+] as const;
+
+function runCiCommand(
+  projectDir: string,
+  provider?: string,
+  phase?: string,
+  threshold?: number,
+  includeBaseline?: boolean,
+  asJson?: boolean,
+): void {
+  if (!provider) {
+    console.log('');
+    console.log(
+      `  ${pc.bold(pc.magenta('forge-ai-init ci'))} — CI Pipeline Generator`,
+    );
+    console.log('');
+    console.log(`  ${pc.bold('Supported providers:')}`);
+    for (const p of VALID_PROVIDERS) {
+      console.log(`    ${pc.cyan(p)}`);
+    }
+    console.log('');
+    console.log(
+      `  ${pc.dim('Usage:')} forge-ai-init ci --provider <name>`,
+    );
+    console.log('');
+    return;
+  }
+
+  if (
+    !VALID_PROVIDERS.includes(
+      provider as CiOptions['provider'],
+    )
+  ) {
+    console.error(
+      pc.red(
+        `  Unknown provider: ${provider}. Valid: ${VALID_PROVIDERS.join(', ')}`,
+      ),
+    );
+    process.exit(1);
+  }
+
+  const result = generateCiPipeline(projectDir, {
+    provider: provider as CiOptions['provider'],
+    phase: phase as CiOptions['phase'],
+    threshold,
+    includeBaseline,
+  });
+
+  if (asJson) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  const fullPath = `${projectDir}/${result.filePath}`;
+  const parentDir = fullPath.substring(
+    0,
+    fullPath.lastIndexOf('/'),
+  );
+  mkdirSync(parentDir, { recursive: true });
+  writeFileSync(fullPath, result.content + '\n', 'utf-8');
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init ci'))} — Pipeline Generated`,
+  );
+  console.log('');
+  console.log(
+    `  ${pc.green('✓')} Created ${pc.cyan(result.filePath)}`,
+  );
+  console.log(
+    `  ${pc.dim('Provider:')} ${result.provider}`,
+  );
+  console.log('');
+  console.log(`  ${pc.bold('Commands in pipeline:')}`);
+  for (const cmd of result.commands) {
+    console.log(`    ${pc.dim('$')} ${cmd}`);
+  }
+  console.log('');
+}
+
+function runDiffCommand(
+  projectDir: string,
+  base?: string,
+  staged?: boolean,
+  asJson?: boolean,
+): void {
+  const result = analyzeDiff(projectDir, { base, staged });
+
+  if (asJson) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log('');
+  console.log(
+    `  ${pc.bold(pc.magenta('forge-ai-init diff'))} — PR Quality Delta`,
+  );
+  console.log('');
+
+  if (result.changedFiles.length === 0) {
+    console.log(`  ${pc.dim('No changed files detected.')}`);
+    console.log('');
+    return;
+  }
+
+  const arrow = result.improved
+    ? pc.green('▲')
+    : pc.red('▼');
+  const deltaStr = result.delta > 0
+    ? pc.green(`+${result.delta}`)
+    : result.delta < 0
+      ? pc.red(`${result.delta}`)
+      : pc.dim('0');
+
+  console.log(
+    `  ${pc.dim('Files changed:')} ${result.changedFiles.length}`,
+  );
+  console.log(
+    `  ${pc.dim('Score:')} ${result.beforeScore} → ${result.afterScore} (${arrow} ${deltaStr})`,
+  );
+  console.log('');
+
+  if (result.newFindings.length > 0) {
+    console.log(
+      `  ${pc.bold('Findings in changed files')} (${result.newFindings.length}):`,
+    );
+    for (const f of result.newFindings.slice(0, 15)) {
+      console.log(
+        `    ${severityColor(f.severity as Severity)} ${pc.dim(f.file)} ${f.message}`,
+      );
+    }
+    if (result.newFindings.length > 15) {
+      console.log(
+        pc.dim(
+          `    ... and ${result.newFindings.length - 15} more`,
+        ),
+      );
+    }
+    console.log('');
+  }
+
+  console.log(`  ${result.summary}`);
+  console.log('');
+}
+
 async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
 
@@ -1545,6 +1712,31 @@ async function main(): Promise<void> {
       projectDir,
       opts['template'] as string | undefined,
       opts['name'] as string | undefined,
+      opts['json'] === true,
+    );
+    return;
+  }
+
+  if (opts['command'] === 'ci') {
+    const thresholdVal = opts['threshold']
+      ? Number(opts['threshold'])
+      : undefined;
+    runCiCommand(
+      projectDir,
+      opts['provider'] as string | undefined,
+      opts['phase'] as string | undefined,
+      thresholdVal,
+      false,
+      opts['json'] === true,
+    );
+    return;
+  }
+
+  if (opts['command'] === 'diff') {
+    runDiffCommand(
+      projectDir,
+      opts['base'] as string | undefined,
+      opts['staged'] === true,
       opts['json'] === true,
     );
     return;

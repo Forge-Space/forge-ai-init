@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-03-08
+
+### Added
+
+- **Scanner expansion** — 23 new rules across 4 languages (66→89 rules)
+  - **Svelte** (+5): reactive assignment chains, bind:innerHTML, global DOM access, mutable prop defaults, spread props (closes #2)
+  - **Go** (+5): format injection, init function overuse, os.Exit, reflect usage, unencrypted HTTP (closes #3)
+  - **Rust** (+5): lock().unwrap(), transmute, Box::leak, panic! macro, raw pointers (closes #4)
+  - **Python** (+8): eval/exec injection, unsafe YAML, weak hashes, star imports, print(), open without context manager, time.sleep (closes #7)
+- **`ci` command** — One-command CI pipeline generation with quality gates
+  - GitHub Actions, GitLab CI, Bitbucket Pipelines support
+  - Auto-generates forge-quality workflow with scan + gate + optional baseline
+  - Reads thresholds from `.forgerc.json`, supports `--phase`, `--threshold`, `--provider`
+- **`diff` command** — PR-level quality delta analysis
+  - Scans only changed files (staged or branch diff)
+  - Compares against baseline for score delta
+  - Reports new findings introduced by the PR
+  - `--base`, `--staged`, `--json` flags
+- 42 new tests (439 total across 22 suites)
+
+### Changed
+
+- Scanner from 66 to 89 regex rules across 10 categories, 7 languages
+- Total commands: 13 (init, check, migrate, assess, update, baseline, plan, doctor, gate, scaffold, migrate-plan, ci, diff)
+
 ## [0.18.0] - 2026-03-08
 
 ### Added
