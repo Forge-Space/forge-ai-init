@@ -1,6 +1,15 @@
 # Changelog
 
-## [Unreleased]
+## [0.22.0] - 2026-03-08
+
+### Added
+
+- **SecCodeBench CWE calibration** — 10 new rules bringing total to 119
+  - Java: XXE, deserialization, SpEL injection, SSTI, XPath injection, Actuator exposure
+  - Cross-language: open redirect, AES-ECB weak crypto
+  - Go: dynamic code via JS engines
+  - Java/Go: ZipSlip archive path traversal
+- Scanner now covers 22 CWE types from Alibaba SecCodeBench benchmark
 
 ## [0.21.0] - 2026-03-08
 
