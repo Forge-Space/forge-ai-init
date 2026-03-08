@@ -1140,4 +1140,124 @@ describe('Benchmark-derived rules (Phase 1)', () => {
     const finding = report.findings.find(f => f.rule === 'jwt-no-verify');
     expect(finding).toBeUndefined();
   });
+
+  // --- SecCodeBench CWE calibration tests ---
+
+  it('detects Java XXE via SAXParserFactory (CWE-611)', () => {
+    writeFile(dir, 'src/Parse.java',
+      'SAXParserFactory factory = SAXParserFactory.newInstance();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'java-xxe');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+  });
+
+  it('detects Java XXE via DocumentBuilderFactory (CWE-611)', () => {
+    writeFile(dir, 'src/Xml.java',
+      'DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'java-xxe');
+    expect(finding).toBeDefined();
+  });
+
+  it('detects Java deserialization via ObjectInputStream (CWE-502)', () => {
+    writeFile(dir, 'src/Deser.java',
+      'ObjectInputStream ois = new ObjectInputStream(input);\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'java-deserialization');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+  });
+
+  it('detects Spring SpEL injection (CWE-917)', () => {
+    writeFile(dir, 'src/Eval.java',
+      'ExpressionParser parser = new SpelExpressionParser();\nparser.parseExpression(userInput);\n');
+    const report = scanProject(dir);
+    const findings = report.findings.filter(
+      f => f.rule === 'java-spel-injection');
+    expect(findings.length).toBeGreaterThanOrEqual(1);
+    expect(findings[0].severity).toBe('critical');
+  });
+
+  it('detects Java SSTI via FreeMarker (CWE-1336)', () => {
+    writeFile(dir, 'src/Tmpl.java',
+      'FreeMarkerConfigurationFactory factory = new FreeMarkerConfigurationFactory();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'java-ssti');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+  });
+
+  it('detects open redirect with request parameter (CWE-601)', () => {
+    writeFile(dir, 'src/Redir.java',
+      'response.sendRedirect(request.getParameter("url"));\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'open-redirect');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects AES-ECB weak crypto (CWE-327)', () => {
+    writeFile(dir, 'src/Crypto.java',
+      'Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'weak-crypto-ecb');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects ZipSlip via ZipInputStream (CWE-22)', () => {
+    writeFile(dir, 'src/Unzip.java',
+      'ZipInputStream zis = new ZipInputStream(fis);\nZipEntry entry = zis.getNextEntry();\n');
+    const report = scanProject(dir);
+    const findings = report.findings.filter(
+      f => f.rule === 'zip-slip');
+    expect(findings.length).toBeGreaterThanOrEqual(1);
+    expect(findings[0].severity).toBe('high');
+  });
+
+  it('detects XPath injection (CWE-643)', () => {
+    writeFile(dir, 'src/Query.java',
+      'XPathFactory xpathFactory = XPathFactory.newInstance();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'xpath-injection');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects Spring Actuator exposure (CWE-200)', () => {
+    writeFile(dir, 'src/app.properties',
+      'management.endpoints.web.exposure.include=*\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'java-actuator-exposure');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('detects Go dynamic code via goja (CWE-94)', () => {
+    writeFile(dir, 'src/exec.go',
+      'vm := goja.New()\nvm.RunString(userInput)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'go-dynamic-code-exec');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+  });
+
+  it('does not fire Java XXE on .go files', () => {
+    writeFile(dir, 'src/main.go',
+      'factory := xml.NewDecoder(r)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'java-xxe');
+    expect(finding).toBeUndefined();
+  });
 });

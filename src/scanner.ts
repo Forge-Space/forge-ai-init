@@ -905,6 +905,86 @@ const RULES: Rule[] = [
     message: 'render_template_string with user input enables SSTI (CWE-1336) — use render_template with files',
     extensions: ['.py'],
   },
+  // --- SecCodeBench CWE calibration rules ---
+  {
+    pattern: /XMLReaderFactory\.createXMLReader|SAXParserFactory\.newInstance|DocumentBuilderFactory\.newInstance|XMLInputFactory\.newInstance/g,
+    category: 'security',
+    severity: 'critical',
+    rule: 'java-xxe',
+    message: 'XML parser without disabling external entities (CWE-611) — set FEATURE_EXTERNAL_GENERAL_ENTITIES to false',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /new\s+ObjectInputStream\s*\(/g,
+    category: 'security',
+    severity: 'critical',
+    rule: 'java-deserialization',
+    message: 'ObjectInputStream deserialization (CWE-502) — use allowlists or safe formats (JSON, protobuf)',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /SpelExpressionParser|ExpressionParser\s*\(\s*\)|\.parseExpression\s*\(/g,
+    category: 'security',
+    severity: 'critical',
+    rule: 'java-spel-injection',
+    message: 'Spring Expression Language injection (CWE-917) — avoid evaluating user-controlled expressions',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /\.newConfiguration\(\)|FreeMarkerConfigurationFactory|VelocityEngine\s*\(\)|OgnlContext|ActionContext\.getContext/g,
+    category: 'security',
+    severity: 'critical',
+    rule: 'java-ssti',
+    message: 'Template engine with user input (CWE-1336) — sandbox templates, never pass raw user input',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /(?:redirect|sendRedirect|location\.href|window\.location)\s*(?:=|\()\s*(?:req\.|params\.|query\.|request\.getParameter)/g,
+    category: 'security',
+    severity: 'high',
+    rule: 'open-redirect',
+    message: 'Open redirect (CWE-601) — validate redirect URLs against an allowlist',
+  },
+  {
+    pattern: /AES\/ECB\//g,
+    category: 'security',
+    severity: 'high',
+    rule: 'weak-crypto-ecb',
+    message: 'AES-ECB mode is insecure (CWE-327) — use AES-GCM or AES-CBC with HMAC',
+    extensions: ['.java', '.kt', '.kts'],
+  },
+  {
+    pattern: /ZipEntry|ZipInputStream|TarArchiveEntry/g,
+    category: 'security',
+    severity: 'high',
+    rule: 'zip-slip',
+    message: 'Archive extraction without path validation (CWE-22) — check for path traversal in entry names',
+    extensions: ['.java', '.kt', '.kts', '.go'],
+  },
+  {
+    pattern: /XPathFactory\.newInstance|XPath\.compile|xpath\.evaluate/g,
+    category: 'security',
+    severity: 'high',
+    rule: 'xpath-injection',
+    message: 'XPath query with potential user input (CWE-643) — use parameterized XPath or validate input',
+    extensions: ['.java'],
+  },
+  {
+    pattern: /management\.endpoints\.web\.exposure\.include\s*=\s*\*|@EnableActuator/g,
+    category: 'security',
+    severity: 'high',
+    rule: 'java-actuator-exposure',
+    message: 'Spring Actuator exposed (CWE-200) — restrict endpoints and require authentication',
+    extensions: ['.java', '.properties', '.yml', '.yaml'],
+  },
+  {
+    pattern: /goja\.New\s*\(\)|otto\.New\s*\(\)/g,
+    category: 'security',
+    severity: 'high',
+    rule: 'go-dynamic-code-exec',
+    message: 'Dynamic code execution via JS engine (CWE-94) — sandbox execution and validate input',
+    extensions: ['.go'],
+  },
 ];
 
 const CODE_EXTENSIONS = new Set([
@@ -922,6 +1002,9 @@ const CODE_EXTENSIONS = new Set([
   '.kts',
   '.vue',
   '.svelte',
+  '.properties',
+  '.yml',
+  '.yaml',
 ]);
 
 const IGNORE_DIRS = new Set([
