@@ -233,7 +233,7 @@ Run `migrate` to scan source code for anti-patterns, tech debt, and security iss
 npx forge-ai-init migrate
 ```
 
-Detects 66 patterns across 10 categories (language-aware — rules only fire on matching file types):
+Detects 115 patterns across 10 categories (language-aware — rules only fire on matching file types):
 
 | Category         | What it finds                                                                                                                                              |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |

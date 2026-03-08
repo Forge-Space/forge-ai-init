@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-03-08
+
+### Added
+
+- **10 SecCodeBench CWE calibration rules** (105→115 pattern rules, 119 total)
+  - **Java** (+6): XXE/SAXParser/DocumentBuilder (CWE-611), ObjectInputStream
+    deserialization (CWE-502), SpEL injection (CWE-917), SSTI via FreeMarker/
+    Velocity/Ognl (CWE-1336), XPath injection (CWE-643), Spring Actuator
+    exposure (CWE-200)
+  - **Cross-language** (+2): open redirect (CWE-601), AES-ECB weak crypto
+    (CWE-327)
+  - **Go** (+1): dynamic code via goja/otto JS engines (CWE-94)
+  - **Java/Go** (+1): ZipSlip archive path traversal (CWE-22)
+- Scanner now covers 22 CWE types from Alibaba SecCodeBench benchmark
+- Config file scanning: `.properties`, `.yml`, `.yaml` extensions added
+- 12 new calibration tests including cross-language exclusion checks
+
 ## [0.20.0] - 2026-03-08
 
 ### Added
