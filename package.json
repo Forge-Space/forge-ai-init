@@ -1,13 +1,23 @@
 {
   "name": "forge-ai-init",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "AI Governance Layer \u2014 one command to add AI coding rules, skills, hooks, and quality gates to any project",
   "type": "module",
   "bin": {
     "forge-ai-init": "./dist/index.js"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/api.js",
+  "types": "./dist/api.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/api.js",
+      "types": "./dist/api.d.ts"
+    },
+    "./api": {
+      "import": "./dist/api.js",
+      "types": "./dist/api.d.ts"
+    }
+  },
   "files": [
     "dist"
   ],

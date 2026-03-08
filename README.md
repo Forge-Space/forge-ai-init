@@ -520,6 +520,43 @@ npx forge-ai-init baseline --compare              # Track progress
 npx forge-ai-init gate --phase stabilization      # Verify gate passes
 ```
 
+## CI Pipeline Generator
+
+Generate a complete CI quality gate pipeline in one command:
+
+```bash
+npx forge-ai-init ci --provider github-actions
+npx forge-ai-init ci --provider gitlab-ci --phase production
+npx forge-ai-init ci --provider bitbucket --threshold 80
+```
+
+| Provider | Output File | Features |
+| --- | --- | --- |
+| `github-actions` | `.github/workflows/forge-quality.yml` | Checkout, Node setup, scan, gate |
+| `gitlab-ci` | `.gitlab-ci.yml` | Test stage, artifacts, node:22 image |
+| `bitbucket` | `bitbucket-pipelines.yml` | Pull request pipeline, node:22 image |
+
+Reads thresholds from `.forgerc.json`. Add `--phase` to set quality phase, `--threshold` for custom minimum score.
+
+## PR Quality Delta
+
+Analyze the quality impact of a PR or staged changes:
+
+```bash
+npx forge-ai-init diff                    # Compare against main
+npx forge-ai-init diff --base develop     # Compare against develop
+npx forge-ai-init diff --staged           # Scan staged files only
+npx forge-ai-init diff --json             # Machine-readable output
+```
+
+Shows:
+- Changed files count
+- Score delta (before → after) with trend arrow
+- New findings introduced by the PR
+- Summary verdict (improved/degraded)
+
+Compares against saved baseline (from `forge-ai-init baseline`) when available.
+
 ## Legacy Migration Mode
 
 Use `--migrate` to add governance to existing legacy projects. This mode adds:

@@ -729,3 +729,266 @@ describe('Kotlin scanner rules', () => {
     expect(finding).toBeUndefined();
   });
 });
+
+describe('Svelte expansion rules', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = makeTempDir();
+  });
+
+  it('detects svelte-reactive-assignment', () => {
+    writeFile(
+      dir,
+      'Component.svelte',
+      '$: doubled = count * 2;\n$: tripled = count * 3;\n$: quadrupled = count * 4;\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'svelte-reactive-assignment',
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('low');
+    expect(finding!.category).toBe('engineering');
+  });
+
+  it('detects svelte-bind-html', () => {
+    writeFile(dir, 'Page.svelte', '<div bind:innerHTML={content}></div>\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'svelte-bind-html');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects svelte-global-dom-access', () => {
+    writeFile(
+      dir,
+      'App.svelte',
+      '<button on:click={() => document.querySelector(".btn")}></button>\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'svelte-global-dom-access',
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('engineering');
+  });
+
+  it('detects svelte-mutable-prop-default', () => {
+    writeFile(
+      dir,
+      'Card.svelte',
+      'export let items = [];\nexport let config = {};\n',
+    );
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'svelte-mutable-prop-default',
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('engineering');
+  });
+
+  it('detects svelte-spread-props', () => {
+    writeFile(dir, 'Wrapper.svelte', '<Component {...$$props} />\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'svelte-spread-props',
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('engineering');
+  });
+});
+
+describe('Go expansion rules', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = makeTempDir();
+  });
+
+  it('detects go-format-injection', () => {
+    writeFile(dir, 'log.go', 'msg := fmt.Sprintf("%s"+userInput, val)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-format-injection');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects go-init-function', () => {
+    writeFile(dir, 'pkg.go', 'func init() {\n    setup()\n}\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-init-function');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('architecture');
+  });
+
+  it('detects go-os-exit', () => {
+    writeFile(dir, 'main.go', 'os.Exit(1)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-os-exit');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('engineering');
+  });
+
+  it('detects go-reflect-usage', () => {
+    writeFile(dir, 'dynamic.go', 'reflect.ValueOf(x)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'go-reflect-usage');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('low');
+    expect(finding!.category).toBe('scalability');
+  });
+
+  it('detects go-unencrypted-http', () => {
+    writeFile(dir, 'client.go', 'http.ListenAndServe(":8080", handler)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'go-unencrypted-http',
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('security');
+  });
+});
+
+describe('Rust expansion rules', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = makeTempDir();
+  });
+
+  it('detects rust-lock-unwrap', () => {
+    writeFile(dir, 'sync.rs', 'let guard = mutex.lock().unwrap();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-lock-unwrap');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('error-handling');
+  });
+
+  it('detects rust-transmute', () => {
+    writeFile(dir, 'unsafe.rs', 'std::mem::transmute(ptr)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-transmute');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects rust-box-leak', () => {
+    writeFile(dir, 'mem.rs', 'Box::leak(boxed)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-box-leak');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('scalability');
+  });
+
+  it('detects rust-panic-macro', () => {
+    writeFile(dir, 'handler.rs', 'panic!("unexpected state")\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-panic-macro');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('high');
+    expect(finding!.category).toBe('error-handling');
+  });
+
+  it('detects rust-raw-pointer', () => {
+    writeFile(dir, 'ffi.rs', 'let ptr = data.as_ptr();\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'rust-raw-pointer');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('security');
+  });
+});
+
+describe('Python expansion rules', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = makeTempDir();
+  });
+
+  it('detects python-eval', () => {
+    writeFile(dir, 'dynamic.py', 'result = eval(user_input)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-eval');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects python-exec', () => {
+    writeFile(dir, 'script.py', 'exec(code_string)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-exec');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('critical');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects python-yaml-load', () => {
+    writeFile(dir, 'config.py', 'import yaml\ndata = yaml.load(raw)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-yaml-load');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects python-weak-hash', () => {
+    writeFile(dir, 'hash.py', 'hashlib.md5(data)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-weak-hash');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('security');
+  });
+
+  it('detects python-star-import', () => {
+    writeFile(dir, 'src/views2.py', 'from os import *\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-star-import');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('architecture');
+  });
+
+  it('detects python-print', () => {
+    writeFile(dir, 'debug.py', 'print("debug output")\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-print');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('low');
+    expect(finding!.category).toBe('engineering');
+  });
+
+  it('detects python-open-no-context', () => {
+    writeFile(dir, 'reader.py', 'f = open("data.txt")\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(
+      f => f.rule === 'python-open-no-context',
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('engineering');
+  });
+
+  it('detects python-time-sleep', () => {
+    writeFile(dir, 'worker.py', 'time.sleep(5)\n');
+    const report = scanProject(dir);
+    const finding = report.findings.find(f => f.rule === 'python-time-sleep');
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('medium');
+    expect(finding!.category).toBe('scalability');
+  });
+});
