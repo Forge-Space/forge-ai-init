@@ -136,6 +136,12 @@ npx forge-ai-init migrate --watch
 
 # Scan only staged files (fast pre-commit check)
 npx forge-ai-init migrate --staged
+
+# Save a quality baseline snapshot
+npx forge-ai-init baseline
+
+# Compare current scan against saved baseline
+npx forge-ai-init baseline --compare
 ```
 
 ### Options
@@ -151,6 +157,7 @@ npx forge-ai-init migrate --staged
 | `--yes`          | Skip interactive prompts                            | `false`    |
 | `--staged`       | Scan only git-staged files (migrate command)        | `false`    |
 | `--watch`        | Watch for changes and re-scan (migrate command)     | `false`    |
+| `--compare`      | Compare against saved baseline (baseline command)   | `false`    |
 
 ## Update Governance Files
 
@@ -343,6 +350,36 @@ SARIF reports integrate with GitHub's code scanning alerts — add to your CI wo
   with:
     sarif_file: results.sarif
 ```
+
+## Baseline Tracking
+
+Track quality score over time with snapshots:
+
+```bash
+# Save a baseline snapshot
+npx forge-ai-init baseline
+
+# After making changes, compare against the baseline
+npx forge-ai-init baseline --compare
+```
+
+**Compare output:**
+
+```
+  Score: 72 → 85 (▲ +13)
+  Grade: C → B changed
+  Files: 42 → 44
+
+  ✓ 8 findings resolved
+  ✗ 2 new findings
+
+  Category changes:
+    error-handling       5 → 2 (-3)
+    security             3 → 1 (-2)
+    engineering          2 → 5 (+3)
+```
+
+Baselines are stored in `.forge/baseline.json` as a history array — each `baseline` call appends a new snapshot for trend tracking.
 
 ## Legacy Migration Mode
 
