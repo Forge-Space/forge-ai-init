@@ -1,0 +1,67 @@
+{
+  "name": "forge-ai-init",
+  "version": "0.1.0",
+  "description": "AI Governance Layer — one command to add AI coding rules, skills, hooks, and quality gates to any project",
+  "type": "module",
+  "bin": {
+    "forge-ai-init": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "validate": "npm run lint && npm run typecheck && npm run build && npm test",
+    "prepublishOnly": "npm run validate"
+  },
+  "keywords": [
+    "ai",
+    "governance",
+    "claude",
+    "cursor",
+    "windsurf",
+    "copilot",
+    "scaffolding",
+    "quality",
+    "security",
+    "architecture",
+    "coding-standards",
+    "mcp",
+    "skills",
+    "hooks"
+  ],
+  "author": "Forge Space",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Forge-Space/forge-ai-init.git"
+  },
+  "homepage": "https://github.com/Forge-Space/forge-ai-init#readme",
+  "bugs": {
+    "url": "https://github.com/Forge-Space/forge-ai-init/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.10.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.0",
+    "eslint": "^9.21.0",
+    "jest": "^30.0.0-beta.3",
+    "ts-jest": "^29.3.2",
+    "tsup": "^8.4.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
