@@ -12,7 +12,7 @@ import {
   type Severity,
 } from './scanner.js';
 import { updateProject } from './updater.js';
-import { writeReport, type ReportFormat } from './reporter.js';
+import { formatReport, writeReport, type ReportFormat } from './reporter.js';
 import {
   assessProject,
   type AssessmentReport,
@@ -119,8 +119,8 @@ ${pc.dim('Options:')}
   --json               Output as JSON (migrate/assess commands)
   --staged             Scan only git-staged files (migrate command)
   --watch              Watch for file changes and re-scan (migrate command)
-  --output <path>      Write report to file (migrate/assess)
-  --format <fmt>       Report format: json, markdown, sarif (migrate/assess)
+  --output <path>      Write report to file (migrate/assess/gate)
+  --format <fmt>       Report format: json, markdown, sarif (migrate/assess/gate)
   --compare            Compare current scan against saved baseline
   --phase <phase>      Quality gate phase: foundation, stabilization, production
   --threshold <n>      Quality gate minimum score (0-100)
@@ -551,6 +551,12 @@ function runScanCommand(
     return;
   }
 
+  if (format) {
+    const fmt = format as ReportFormat;
+    console.log(formatReport(report, fmt));
+    return;
+  }
+
   const modeLabel = staged ? ' (staged files)' : '';
   console.log('');
   console.log(
@@ -653,6 +659,14 @@ function runAssessCommand(
 
   if (asJson) {
     console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  if (format) {
+    const content = format === 'markdown'
+      ? formatAssessMarkdown(report)
+      : JSON.stringify(report, null, 2);
+    console.log(content);
     return;
   }
 
@@ -1241,15 +1255,54 @@ function runDoctorCommand(
   }
 }
 
+function formatGateMarkdown(result: ReturnType<typeof runGate>): string {
+  const icon = result.passed ? '✅' : '❌';
+  const label = result.passed ? 'PASSED' : 'FAILED';
+  const lines: string[] = [];
+  lines.push('# forge-ai-init Quality Gate');
+  lines.push('');
+  lines.push(
+    `${icon} **${label}** — Score **${result.score}**/100 ` +
+    `(${result.grade}) · Threshold ${result.threshold} · Phase ${result.phase}`,
+  );
+  lines.push('');
+  if (result.violations.length > 0) {
+    lines.push('## Blocking Violations');
+    lines.push('');
+    lines.push('| Rule | Severity | Count |');
+    lines.push('|------|----------|------:|');
+    for (const v of result.violations) {
+      lines.push(`| ${v.rule} | ${v.severity} | ${v.count} |`);
+    }
+    lines.push('');
+  }
+  lines.push(result.summary);
+  lines.push('');
+  return lines.join('\n');
+}
+
 function runGateCommand(
   projectDir: string,
   phase?: string,
   threshold?: number,
   asJson?: boolean,
+  format?: string,
 ): void {
   const result = runGate(projectDir, phase, threshold);
 
   if (asJson) {
+    console.log(JSON.stringify(result, null, 2));
+    process.exitCode = result.passed ? 0 : 1;
+    return;
+  }
+
+  if (format === 'markdown') {
+    console.log(formatGateMarkdown(result));
+    process.exitCode = result.passed ? 0 : 1;
+    return;
+  }
+
+  if (format === 'json') {
     console.log(JSON.stringify(result, null, 2));
     process.exitCode = result.passed ? 0 : 1;
     return;
@@ -1694,6 +1747,7 @@ async function main(): Promise<void> {
       opts['phase'] as string | undefined,
       thresholdVal,
       opts['json'] === true,
+      opts['format'] as string | undefined,
     );
     return;
   }

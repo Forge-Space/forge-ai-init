@@ -121,7 +121,7 @@ function sarifLevel(
 }
 
 function getVersion(): string {
-  return '0.11.0';
+  return '0.23.0';
 }
 
 

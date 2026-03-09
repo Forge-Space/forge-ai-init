@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.23.0] - 2026-03-08
+
+### Fixed
+
+- **`--format` flag now works without `--output`** — `migrate`, `assess`, and `gate` commands output clean markdown/JSON/SARIF to stdout when `--format` is specified, even without `--output <path>`. Previously, `--format` was silently ignored without `--output`, causing colored terminal output (ANSI escape codes) to appear in CI workflows that captured stdout for PR comments.
+
+### Added
+
+- `gate --format markdown` support — quality gate results as clean markdown for CI posting
+
 ## [0.22.0] - 2026-03-08
 
 ### Added
