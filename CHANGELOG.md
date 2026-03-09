@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.24.0] - 2026-03-09
+
+### Changed
+
+- **Rich markdown scan reports** — `--format markdown` now produces visually appealing PR comments with severity icons, collapsible sections, strengths/weaknesses analysis, category breakdown tables, hot files, and actionable recommendations. Clean projects show a strengths section; projects with findings get categorized tables with severity badges and improvement suggestions.
+
 ## [0.23.0] - 2026-03-08
 
 ### Fixed
