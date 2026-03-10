@@ -12,6 +12,8 @@
 - Generated hooks/settings/test-autogen commands now include tenant arguments by default.
 - CI `quality-gate` remains repository-scoped (no external tenant-profile checkout) to avoid
   score distortion from files outside this repository.
+- `quality-gate` now runs `forge-ai-action` with `command: diff` to enforce PR regressions
+  instead of failing on historical repository-wide debt.
 
 ### Fixed
 

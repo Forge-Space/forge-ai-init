@@ -201,6 +201,8 @@ npx forge-ai-init scaffold --template nextjs-app --name my-app
 | Missing tests feedback             | Hook failure with missing files                                        | PR comment + annotations + status check                                              |
 | Learning loop                      | `.forge/test-autogen-telemetry.jsonl` + baseline                       | Weekly workflow `.github/workflows/test-autogen-learning.yml` opens manual-review PR |
 
+The default PR gate in this repository uses `forge-ai-action` `command: diff` to block
+regressions introduced by the PR delta without failing on pre-existing repository debt.
 ## Update Governance Files
 
 Run `update` to re-generate governance files with the latest rules and patterns:
