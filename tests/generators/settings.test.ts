@@ -86,6 +86,7 @@ describe('generateSettings', () => {
       h.matcher.includes('git commit'),
     );
     expect(commitHook).toBeDefined();
+    expect(commitHook!.hooks[0]!.command).toContain('test-autogen');
     expect(commitHook!.hooks[0]!.command).toContain('60');
   });
 

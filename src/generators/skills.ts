@@ -8,6 +8,7 @@ import { migrationAuditSkill } from '../templates/skills/migration-audit.js';
 import { techDebtReviewSkill } from '../templates/skills/tech-debt-review.js';
 import { dependencyAuditSkill } from '../templates/skills/dependency-audit.js';
 import { scalabilityReviewSkill } from '../templates/skills/scalability-review.js';
+import { testAutogenSkill } from '../templates/skills/test-autogen.js';
 
 export function generateSkills(
   stack: DetectedStack,
@@ -21,6 +22,7 @@ export function generateSkills(
   skills.set('quality-gate/SKILL.md', qualityGateSkill(stack));
   skills.set('security-check/SKILL.md', securityCheckSkill(stack));
   skills.set('code-conscience/SKILL.md', codeConscienceSkill());
+  skills.set('test-autogen/SKILL.md', testAutogenSkill(stack));
 
   if (tier === 'enterprise') {
     skills.set('arch-review/SKILL.md', archReviewSkill());

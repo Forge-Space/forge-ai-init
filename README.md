@@ -34,6 +34,7 @@ your-project/
 │       ├── quality-gate/SKILL.md      # Pre-PR quality checks
 │       ├── security-check/SKILL.md    # OWASP + dependency audit
 │       ├── code-conscience/SKILL.md   # AI code discipline enforcer
+│       ├── test-autogen/SKILL.md      # Auto-generation of required tests
 │       ├── arch-review/SKILL.md       # Architecture enforcement
 │       ├── test-first/SKILL.md        # TDD enforcement
 │       ├── dependency-audit/SKILL.md  # Dependency health checks
@@ -43,6 +44,10 @@ your-project/
 ├── MIGRATION.md                       # Migration roadmap (--migrate)
 ├── docs/adr/ADR-0001-*.md            # Initial migration ADR (--migrate)
 ├── .mcp.json                          # MCP server configs
+├── .githooks/
+│   ├── pre-commit                     # test-autogen guard
+│   └── pre-push                       # test-autogen CI parity
+├── scripts/hooks/install-hooks.sh     # core.hooksPath installer
 ├── .forge/                            # (enterprise tier)
 │   ├── policies/                      # Security, quality, compliance policies
 │   ├── scorecard.json                 # Scorecard configuration
@@ -50,6 +55,7 @@ your-project/
 └── .github/workflows/                 # (or .gitlab-ci.yml)
     ├── ci.yml                         # Lint, build, test, audit
     ├── secret-scan.yml                # TruffleHog scanning
+    ├── test-autogen-learning.yml      # Weekly metadata learning PR
     ├── scorecard.yml                  # Project scorecard (enterprise)
     └── policy-check.yml               # Policy evaluation (enterprise)
 ```
@@ -81,8 +87,8 @@ Auto-detects your project's language, framework, build tool, package manager, te
 | Tier           | For                  | Skills | What's generated                                  |
 | -------------- | -------------------- | ------ | ------------------------------------------------- |
 | **Lite**       | Solo dev, prototypes | 0      | Rules + hooks                                     |
-| **Standard**   | Teams, production    | 3      | Rules + skills + MCP + CI                         |
-| **Enterprise** | Organizations        | 7      | Standard + policies + scorecard + feature toggles |
+| **Standard**   | Teams, production    | 4      | Rules + skills + MCP + CI                         |
+| **Enterprise** | Organizations        | 8      | Standard + policies + scorecard + feature toggles |
 
 ### Skills by Tier
 
@@ -91,6 +97,7 @@ Auto-detects your project's language, framework, build tool, package manager, te
 | quality-gate       | -    | ✓           | ✓           |
 | security-check     | -    | ✓           | ✓           |
 | code-conscience    | -    | ✓           | ✓           |
+| test-autogen       | -    | ✓           | ✓           |
 | arch-review        | -    | -           | ✓           |
 | test-first         | -    | -           | ✓           |
 | dependency-audit   | -    | -           | ✓           |
@@ -152,28 +159,45 @@ npx forge-ai-init doctor
 # CI quality gate enforcement (exit code 0/1)
 npx forge-ai-init gate --phase production --threshold 80
 
+# Auto-generate and enforce tests for changed files
+npx forge-ai-init test-autogen --staged --write --check
+npx forge-ai-init test-autogen --check --json
+
 # Create project from golden path template
 npx forge-ai-init scaffold --template nextjs-app --name my-app
 ```
 
+`test-autogen` executes git commands through argument-safe invocation (no shell interpolation).
+
 ### Options
 
-| Flag             | Description                                         | Default    |
-| ---------------- | --------------------------------------------------- | ---------- |
-| `--dir <path>`   | Target project directory                            | `.`        |
-| `--tier <level>` | Governance tier: `lite`, `standard`, `enterprise`   | `standard` |
-| `--tools <list>` | AI tools: `claude`, `cursor`, `windsurf`, `copilot` | `claude`   |
-| `--migrate`      | Legacy migration mode (extra rules + skills)        | `false`    |
-| `--force`        | Overwrite existing files                            | `false`    |
-| `--dry-run`      | Show what would be created                          | `false`    |
-| `--yes`          | Skip interactive prompts                            | `false`    |
-| `--staged`       | Scan only git-staged files (migrate command)        | `false`    |
-| `--watch`        | Watch for changes and re-scan (migrate command)     | `false`    |
-| `--compare`      | Compare against saved baseline (baseline command)   | `false`    |
-| `--phase <p>`    | Quality gate phase: foundation, stabilization, production | auto     |
-| `--threshold <n>`| Quality gate minimum score (0-100)                  | from config|
-| `--template <id>`| Scaffold template ID                                | -          |
-| `--name <name>`  | Project name (scaffold command)                     | -          |
+| Flag              | Description                                               | Default     |
+| ----------------- | --------------------------------------------------------- | ----------- |
+| `--dir <path>`    | Target project directory                                  | `.`         |
+| `--tier <level>`  | Governance tier: `lite`, `standard`, `enterprise`         | `standard`  |
+| `--tools <list>`  | AI tools: `claude`, `cursor`, `windsurf`, `copilot`       | `claude`    |
+| `--migrate`       | Legacy migration mode (extra rules + skills)              | `false`     |
+| `--force`         | Overwrite existing files                                  | `false`     |
+| `--dry-run`       | Show what would be created                                | `false`     |
+| `--yes`           | Skip interactive prompts                                  | `false`     |
+| `--staged`        | Scan only git-staged files (migrate command)              | `false`     |
+| `--watch`         | Watch for changes and re-scan (migrate command)           | `false`     |
+| `--compare`       | Compare against saved baseline (baseline command)         | `false`     |
+| `--phase <p>`     | Quality gate phase: foundation, stabilization, production | auto        |
+| `--threshold <n>` | Quality gate minimum score (0-100)                        | from config |
+| `--check`         | Enforce required generated artifacts (test-autogen)       | `false`     |
+| `--write`         | Write missing generated artifacts (test-autogen)          | `false`     |
+| `--template <id>` | Scaffold template ID                                      | -           |
+| `--name <name>`   | Project name (scaffold command)                           | -           |
+
+## Test-Autogen Local x CI Matrix
+
+| Guardrail                          | Local (developer machine)                                              | CI / PR parity                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------ | ------- |
+| Required tests for changed files   | `npx forge-ai-init test-autogen --staged --write --check` (pre-commit) | `forge-ai-action` with `command: test-autogen-check`                                 |
+| Full branch validation before push | `npx forge-ai-init test-autogen --check --json` (pre-push)             | `test_autogen_phase=warn                                                             | phase1 | phase2` |
+| Missing tests feedback             | Hook failure with missing files                                        | PR comment + annotations + status check                                              |
+| Learning loop                      | `.forge/test-autogen-telemetry.jsonl` + baseline                       | Weekly workflow `.github/workflows/test-autogen-learning.yml` opens manual-review PR |
 
 ## Update Governance Files
 
@@ -428,12 +452,12 @@ npx forge-ai-init doctor --json
 
 11 health checks across 5 categories:
 
-| Category     | Checks                                              |
-| ------------ | --------------------------------------------------- |
-| Architecture | God files, function sprawl                          |
-| Security     | Critical findings, security vulnerabilities          |
-| Governance   | CI/CD, linting, type checking, CLAUDE.md, ARCH.md   |
-| Quality      | Score threshold, error handling patterns             |
+| Category     | Checks                                            |
+| ------------ | ------------------------------------------------- |
+| Architecture | God files, function sprawl                        |
+| Security     | Critical findings, security vulnerabilities       |
+| Governance   | CI/CD, linting, type checking, CLAUDE.md, ARCH.md |
+| Quality      | Score threshold, error handling patterns          |
 
 Integrates with baseline tracking for trend detection (improving/stable/degrading). Calculates coupling and complexity scores.
 
@@ -455,6 +479,7 @@ npx forge-ai-init gate --json
 Exit code 0 = passed, 1 = failed. Phase auto-detection from score: foundation (<60), stabilization (60-80), production (80+).
 
 Blocking rules per phase:
+
 - **Foundation/Stabilization** — blocks on critical severity findings
 - **Production** — blocks on critical AND high severity findings
 
@@ -483,13 +508,13 @@ npx forge-ai-init scaffold --template cli-tool --name my-cli
 
 Every template includes `.gitignore`, `CLAUDE.md`, and `.forgerc.json` from day one. No governance debt.
 
-| Template          | Description                         | Includes                            |
-| ----------------- | ----------------------------------- | ----------------------------------- |
-| `nextjs-app`      | Next.js App Router with TypeScript  | React 19, ESLint, Jest, tsconfig    |
-| `express-api`     | Express API with Zod validation     | Express 5, Zod, tsx, tsup           |
-| `fastapi-service` | FastAPI service with pytest         | FastAPI, uvicorn, ruff, mypy        |
-| `ts-library`      | TypeScript library with tsup        | tsup, Jest, ESM                     |
-| `cli-tool`        | CLI tool with @clack/prompts        | @clack/prompts, picocolors, tsx     |
+| Template          | Description                        | Includes                         |
+| ----------------- | ---------------------------------- | -------------------------------- |
+| `nextjs-app`      | Next.js App Router with TypeScript | React 19, ESLint, Jest, tsconfig |
+| `express-api`     | Express API with Zod validation    | Express 5, Zod, tsx, tsup        |
+| `fastapi-service` | FastAPI service with pytest        | FastAPI, uvicorn, ruff, mypy     |
+| `ts-library`      | TypeScript library with tsup       | tsup, Jest, ESM                  |
+| `cli-tool`        | CLI tool with @clack/prompts       | @clack/prompts, picocolors, tsx  |
 
 ## Migration Planning
 
@@ -530,11 +555,11 @@ npx forge-ai-init ci --provider gitlab-ci --phase production
 npx forge-ai-init ci --provider bitbucket --threshold 80
 ```
 
-| Provider | Output File | Features |
-| --- | --- | --- |
-| `github-actions` | `.github/workflows/forge-quality.yml` | Checkout, Node setup, scan, gate |
-| `gitlab-ci` | `.gitlab-ci.yml` | Test stage, artifacts, node:22 image |
-| `bitbucket` | `bitbucket-pipelines.yml` | Pull request pipeline, node:22 image |
+| Provider         | Output File                           | Features                             |
+| ---------------- | ------------------------------------- | ------------------------------------ |
+| `github-actions` | `.github/workflows/forge-quality.yml` | Checkout, Node setup, scan, gate     |
+| `gitlab-ci`      | `.gitlab-ci.yml`                      | Test stage, artifacts, node:22 image |
+| `bitbucket`      | `bitbucket-pipelines.yml`             | Pull request pipeline, node:22 image |
 
 Reads thresholds from `.forgerc.json`. Add `--phase` to set quality phase, `--threshold` for custom minimum score.
 
@@ -550,6 +575,7 @@ npx forge-ai-init diff --json             # Machine-readable output
 ```
 
 Shows:
+
 - Changed files count
 - Score delta (before → after) with trend arrow
 - New findings introduced by the PR

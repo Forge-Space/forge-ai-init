@@ -88,13 +88,24 @@ describe('checker', () => {
       '.github/copilot-instructions.md': '# Copilot',
       '.claude/settings.json': JSON.stringify({
         hooks: {
-          PreToolUse: [{ matcher: 'test', hooks: [] }],
+          PreToolUse: [
+            {
+              matcher: 'Bash(git commit)',
+              hooks: [
+                {
+                  command:
+                    'npx forge-ai-init test-autogen --staged --write --check',
+                },
+              ],
+            },
+          ],
           PostToolUse: [{ matcher: 'test', hooks: [] }],
         },
       }),
       '.claude/skills/quality-gate/SKILL.md': 'skill',
       '.claude/skills/security-check/SKILL.md': 'skill',
       '.claude/skills/code-conscience/SKILL.md': 'skill',
+      '.claude/skills/test-autogen/SKILL.md': 'skill',
       '.claude/skills/arch-review/SKILL.md': 'skill',
       '.claude/skills/test-first/SKILL.md': 'skill',
       '.mcp.json': '{}',
@@ -221,6 +232,7 @@ describe('checker', () => {
       '.claude/skills/quality-gate/SKILL.md': 'skill',
       '.claude/skills/security-check/SKILL.md': 'skill',
       '.claude/skills/code-conscience/SKILL.md': 'skill',
+      '.claude/skills/test-autogen/SKILL.md': 'skill',
       '.claude/skills/arch-review/SKILL.md': 'skill',
       '.claude/skills/test-first/SKILL.md': 'skill',
     });
@@ -231,7 +243,7 @@ describe('checker', () => {
       (c) => c.name === 'Skill coverage',
     );
     expect(skillCoverage?.status).toBe('pass');
-    expect(skillCoverage?.detail).toContain('5 of 9');
+    expect(skillCoverage?.detail).toContain('6 of 10');
   });
 
   it('provides category summaries', () => {
