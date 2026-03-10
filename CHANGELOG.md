@@ -26,6 +26,11 @@
 - `generateSettings()` commit hook now runs test autogen before quality score gate.
 - Standard tier skills: 3 → 4. Enterprise tier skills: 7 → 8.
 
+### Fixed
+
+- Hardened internal git command execution in `test-autogen` by removing shell command strings.
+- Refined `test-autogen` tests to avoid insecure temporary path and command invocation patterns.
+
 ## [0.24.0] - 2026-03-09
 
 ### Changed

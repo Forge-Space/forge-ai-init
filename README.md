@@ -167,35 +167,37 @@ npx forge-ai-init test-autogen --check --json
 npx forge-ai-init scaffold --template nextjs-app --name my-app
 ```
 
+`test-autogen` executes git commands through argument-safe invocation (no shell interpolation).
+
 ### Options
 
-| Flag             | Description                                         | Default    |
-| ---------------- | --------------------------------------------------- | ---------- |
-| `--dir <path>`   | Target project directory                            | `.`        |
-| `--tier <level>` | Governance tier: `lite`, `standard`, `enterprise`   | `standard` |
-| `--tools <list>` | AI tools: `claude`, `cursor`, `windsurf`, `copilot` | `claude`   |
-| `--migrate`      | Legacy migration mode (extra rules + skills)        | `false`    |
-| `--force`        | Overwrite existing files                            | `false`    |
-| `--dry-run`      | Show what would be created                          | `false`    |
-| `--yes`          | Skip interactive prompts                            | `false`    |
-| `--staged`       | Scan only git-staged files (migrate command)        | `false`    |
-| `--watch`        | Watch for changes and re-scan (migrate command)     | `false`    |
-| `--compare`      | Compare against saved baseline (baseline command)   | `false`    |
-| `--phase <p>`    | Quality gate phase: foundation, stabilization, production | auto     |
-| `--threshold <n>`| Quality gate minimum score (0-100)                  | from config|
-| `--check`        | Enforce required generated artifacts (test-autogen) | `false`   |
-| `--write`        | Write missing generated artifacts (test-autogen)    | `false`   |
-| `--template <id>`| Scaffold template ID                                | -          |
-| `--name <name>`  | Project name (scaffold command)                     | -          |
+| Flag              | Description                                               | Default     |
+| ----------------- | --------------------------------------------------------- | ----------- |
+| `--dir <path>`    | Target project directory                                  | `.`         |
+| `--tier <level>`  | Governance tier: `lite`, `standard`, `enterprise`         | `standard`  |
+| `--tools <list>`  | AI tools: `claude`, `cursor`, `windsurf`, `copilot`       | `claude`    |
+| `--migrate`       | Legacy migration mode (extra rules + skills)              | `false`     |
+| `--force`         | Overwrite existing files                                  | `false`     |
+| `--dry-run`       | Show what would be created                                | `false`     |
+| `--yes`           | Skip interactive prompts                                  | `false`     |
+| `--staged`        | Scan only git-staged files (migrate command)              | `false`     |
+| `--watch`         | Watch for changes and re-scan (migrate command)           | `false`     |
+| `--compare`       | Compare against saved baseline (baseline command)         | `false`     |
+| `--phase <p>`     | Quality gate phase: foundation, stabilization, production | auto        |
+| `--threshold <n>` | Quality gate minimum score (0-100)                        | from config |
+| `--check`         | Enforce required generated artifacts (test-autogen)       | `false`     |
+| `--write`         | Write missing generated artifacts (test-autogen)          | `false`     |
+| `--template <id>` | Scaffold template ID                                      | -           |
+| `--name <name>`   | Project name (scaffold command)                           | -           |
 
 ## Test-Autogen Local x CI Matrix
 
-| Guardrail | Local (developer machine) | CI / PR parity |
-|-----------|---------------------------|----------------|
-| Required tests for changed files | `npx forge-ai-init test-autogen --staged --write --check` (pre-commit) | `forge-ai-action` with `command: test-autogen-check` |
-| Full branch validation before push | `npx forge-ai-init test-autogen --check --json` (pre-push) | `test_autogen_phase=warn|phase1|phase2` |
-| Missing tests feedback | Hook failure with missing files | PR comment + annotations + status check |
-| Learning loop | `.forge/test-autogen-telemetry.jsonl` + baseline | Weekly workflow `.github/workflows/test-autogen-learning.yml` opens manual-review PR |
+| Guardrail                          | Local (developer machine)                                              | CI / PR parity                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------ | ------- |
+| Required tests for changed files   | `npx forge-ai-init test-autogen --staged --write --check` (pre-commit) | `forge-ai-action` with `command: test-autogen-check`                                 |
+| Full branch validation before push | `npx forge-ai-init test-autogen --check --json` (pre-push)             | `test_autogen_phase=warn                                                             | phase1 | phase2` |
+| Missing tests feedback             | Hook failure with missing files                                        | PR comment + annotations + status check                                              |
+| Learning loop                      | `.forge/test-autogen-telemetry.jsonl` + baseline                       | Weekly workflow `.github/workflows/test-autogen-learning.yml` opens manual-review PR |
 
 ## Update Governance Files
 
@@ -450,12 +452,12 @@ npx forge-ai-init doctor --json
 
 11 health checks across 5 categories:
 
-| Category     | Checks                                              |
-| ------------ | --------------------------------------------------- |
-| Architecture | God files, function sprawl                          |
-| Security     | Critical findings, security vulnerabilities          |
-| Governance   | CI/CD, linting, type checking, CLAUDE.md, ARCH.md   |
-| Quality      | Score threshold, error handling patterns             |
+| Category     | Checks                                            |
+| ------------ | ------------------------------------------------- |
+| Architecture | God files, function sprawl                        |
+| Security     | Critical findings, security vulnerabilities       |
+| Governance   | CI/CD, linting, type checking, CLAUDE.md, ARCH.md |
+| Quality      | Score threshold, error handling patterns          |
 
 Integrates with baseline tracking for trend detection (improving/stable/degrading). Calculates coupling and complexity scores.
 
@@ -477,6 +479,7 @@ npx forge-ai-init gate --json
 Exit code 0 = passed, 1 = failed. Phase auto-detection from score: foundation (<60), stabilization (60-80), production (80+).
 
 Blocking rules per phase:
+
 - **Foundation/Stabilization** — blocks on critical severity findings
 - **Production** — blocks on critical AND high severity findings
 
@@ -505,13 +508,13 @@ npx forge-ai-init scaffold --template cli-tool --name my-cli
 
 Every template includes `.gitignore`, `CLAUDE.md`, and `.forgerc.json` from day one. No governance debt.
 
-| Template          | Description                         | Includes                            |
-| ----------------- | ----------------------------------- | ----------------------------------- |
-| `nextjs-app`      | Next.js App Router with TypeScript  | React 19, ESLint, Jest, tsconfig    |
-| `express-api`     | Express API with Zod validation     | Express 5, Zod, tsx, tsup           |
-| `fastapi-service` | FastAPI service with pytest         | FastAPI, uvicorn, ruff, mypy        |
-| `ts-library`      | TypeScript library with tsup        | tsup, Jest, ESM                     |
-| `cli-tool`        | CLI tool with @clack/prompts        | @clack/prompts, picocolors, tsx     |
+| Template          | Description                        | Includes                         |
+| ----------------- | ---------------------------------- | -------------------------------- |
+| `nextjs-app`      | Next.js App Router with TypeScript | React 19, ESLint, Jest, tsconfig |
+| `express-api`     | Express API with Zod validation    | Express 5, Zod, tsx, tsup        |
+| `fastapi-service` | FastAPI service with pytest        | FastAPI, uvicorn, ruff, mypy     |
+| `ts-library`      | TypeScript library with tsup       | tsup, Jest, ESM                  |
+| `cli-tool`        | CLI tool with @clack/prompts       | @clack/prompts, picocolors, tsx  |
 
 ## Migration Planning
 
@@ -552,11 +555,11 @@ npx forge-ai-init ci --provider gitlab-ci --phase production
 npx forge-ai-init ci --provider bitbucket --threshold 80
 ```
 
-| Provider | Output File | Features |
-| --- | --- | --- |
-| `github-actions` | `.github/workflows/forge-quality.yml` | Checkout, Node setup, scan, gate |
-| `gitlab-ci` | `.gitlab-ci.yml` | Test stage, artifacts, node:22 image |
-| `bitbucket` | `bitbucket-pipelines.yml` | Pull request pipeline, node:22 image |
+| Provider         | Output File                           | Features                             |
+| ---------------- | ------------------------------------- | ------------------------------------ |
+| `github-actions` | `.github/workflows/forge-quality.yml` | Checkout, Node setup, scan, gate     |
+| `gitlab-ci`      | `.gitlab-ci.yml`                      | Test stage, artifacts, node:22 image |
+| `bitbucket`      | `bitbucket-pipelines.yml`             | Pull request pipeline, node:22 image |
 
 Reads thresholds from `.forgerc.json`. Add `--phase` to set quality phase, `--threshold` for custom minimum score.
 
@@ -572,6 +575,7 @@ npx forge-ai-init diff --json             # Machine-readable output
 ```
 
 Shows:
+
 - Changed files count
 - Score delta (before → after) with trend arrow
 - New findings introduced by the PR
