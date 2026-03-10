@@ -9,7 +9,9 @@ function preCommitHook(_stack: DetectedStack): string {
   return `#!/usr/bin/env sh
 set -e
 
-npx forge-ai-init test-autogen --staged --write --check
+npx forge-ai-init test-autogen --staged --write --check \\
+  --tenant "\${FORGE_TENANT_ID:?FORGE_TENANT_ID is required}" \\
+  --tenant-profile-ref "\${FORGE_TENANT_PROFILE_REF:?FORGE_TENANT_PROFILE_REF is required}"
 `;
 }
 
@@ -17,7 +19,9 @@ function prePushHook(_stack: DetectedStack): string {
   return `#!/usr/bin/env sh
 set -e
 
-npx forge-ai-init test-autogen --check --json >/dev/null
+npx forge-ai-init test-autogen --check --json \\
+  --tenant "\${FORGE_TENANT_ID:?FORGE_TENANT_ID is required}" \\
+  --tenant-profile-ref "\${FORGE_TENANT_PROFILE_REF:?FORGE_TENANT_PROFILE_REF is required}" >/dev/null
 `;
 }
 

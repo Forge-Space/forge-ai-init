@@ -410,7 +410,7 @@ jobs:
           NODE
 
       - name: Snapshot test-autogen status
-        run: npx forge-ai-init test-autogen --check --json > .forge/test-autogen-latest.json || true
+        run: npx forge-ai-init test-autogen --check --json --tenant "$FORGE_TENANT_ID" --tenant-profile-ref "$FORGE_TENANT_PROFILE_REF" > .forge/test-autogen-latest.json || true
 
       - name: Open learning PR
         uses: peter-evans/create-pull-request@v7

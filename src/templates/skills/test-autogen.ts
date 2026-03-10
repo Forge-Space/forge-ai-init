@@ -1,8 +1,10 @@
 import type { DetectedStack } from '../../types.js';
 
 export function testAutogenSkill(stack: DetectedStack): string {
-  const runCheck = 'npx forge-ai-init test-autogen --staged --write --check';
-  const runCiCheck = 'npx forge-ai-init test-autogen --check --json';
+  const tenantArgs =
+    '--tenant "$FORGE_TENANT_ID" --tenant-profile-ref "$FORGE_TENANT_PROFILE_REF"';
+  const runCheck = `npx forge-ai-init test-autogen --staged --write --check ${tenantArgs}`;
+  const runCiCheck = `npx forge-ai-init test-autogen --check --json ${tenantArgs}`;
   const testCmd = stack.testCommand ?? 'npm test';
 
   return `---
