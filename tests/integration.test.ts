@@ -62,7 +62,30 @@ describe('integration', () => {
         join(tempDir, '.claude', 'skills', 'quality-gate', 'SKILL.md'),
       ),
     ).toBe(true);
+    expect(
+      existsSync(
+        join(tempDir, '.claude', 'skills', 'test-autogen', 'SKILL.md'),
+      ),
+    ).toBe(true);
     expect(existsSync(join(tempDir, '.mcp.json'))).toBe(true);
+    expect(existsSync(join(tempDir, '.githooks', 'pre-commit'))).toBe(
+      true,
+    );
+    expect(
+      existsSync(
+        join(
+          tempDir,
+          '.github',
+          'workflows',
+          'test-autogen-learning.yml',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(tempDir, 'scripts', 'hooks', 'install-hooks.sh'),
+      ),
+    ).toBe(true);
 
     const claudeMd = readFileSync(
       join(tempDir, 'CLAUDE.md'),

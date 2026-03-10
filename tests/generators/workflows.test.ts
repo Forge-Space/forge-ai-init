@@ -42,6 +42,17 @@ describe('generateWorkflows', () => {
       expect(scan!.content).toContain('TruffleHog');
     });
 
+    it('generates weekly test-autogen learning workflow for standard tier', () => {
+      const files = generateWorkflows(makeStack(), 'standard');
+      const learning = files.find((f) =>
+        f.path.includes('test-autogen-learning'),
+      );
+      expect(learning).toBeDefined();
+      expect(learning!.content).toContain('schedule:');
+      expect(learning!.content).toContain('create-pull-request');
+      expect(learning!.content).toContain('test-autogen --check --json');
+    });
+
     it('skips secret-scan for lite tier', () => {
       const files = generateWorkflows(makeStack(), 'lite');
       const scan = files.find((f) =>
@@ -106,6 +117,7 @@ describe('generateWorkflows', () => {
       const paths = files.map((f) => f.path);
       expect(paths).toContain('.github/workflows/ci.yml');
       expect(paths).toContain('.github/workflows/secret-scan.yml');
+      expect(paths).toContain('.github/workflows/test-autogen-learning.yml');
       expect(paths).toContain('.github/workflows/scorecard.yml');
       expect(paths).toContain('.github/workflows/policy-check.yml');
       expect(paths).toContain('.github/workflows/migration-gate.yml');

@@ -93,3 +93,12 @@ export {
   writeReport,
   type ReportFormat,
 } from './reporter.js';
+
+export {
+  runTestAutogen,
+  toActionFindings,
+  summarizeTestAutogen,
+  type TestAutogenResult,
+  type TestAutogenRequirement,
+  type TestAutogenOptions,
+} from './test-autogen.js';

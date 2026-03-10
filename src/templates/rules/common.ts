@@ -34,5 +34,10 @@ export function commonRules(): string {
 - Run lint + build + test before creating PRs
 - Every PR needs a description with context and test plan
 - Small, focused PRs — one concern per PR
-- Review your own diff before requesting review`;
+- Review your own diff before requesting review
+
+## Autonomous Skills
+- Use governance skills proactively without slash commands
+- Trigger \`test-autogen\` by default during implementation and commit flow
+- Treat missing required tests as release blockers after warning phase`;
 }

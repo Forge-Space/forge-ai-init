@@ -34,6 +34,7 @@ your-project/
 │       ├── quality-gate/SKILL.md      # Pre-PR quality checks
 │       ├── security-check/SKILL.md    # OWASP + dependency audit
 │       ├── code-conscience/SKILL.md   # AI code discipline enforcer
+│       ├── test-autogen/SKILL.md      # Auto-generation of required tests
 │       ├── arch-review/SKILL.md       # Architecture enforcement
 │       ├── test-first/SKILL.md        # TDD enforcement
 │       ├── dependency-audit/SKILL.md  # Dependency health checks
@@ -43,6 +44,10 @@ your-project/
 ├── MIGRATION.md                       # Migration roadmap (--migrate)
 ├── docs/adr/ADR-0001-*.md            # Initial migration ADR (--migrate)
 ├── .mcp.json                          # MCP server configs
+├── .githooks/
+│   ├── pre-commit                     # test-autogen guard
+│   └── pre-push                       # test-autogen CI parity
+├── scripts/hooks/install-hooks.sh     # core.hooksPath installer
 ├── .forge/                            # (enterprise tier)
 │   ├── policies/                      # Security, quality, compliance policies
 │   ├── scorecard.json                 # Scorecard configuration
@@ -50,6 +55,7 @@ your-project/
 └── .github/workflows/                 # (or .gitlab-ci.yml)
     ├── ci.yml                         # Lint, build, test, audit
     ├── secret-scan.yml                # TruffleHog scanning
+    ├── test-autogen-learning.yml      # Weekly metadata learning PR
     ├── scorecard.yml                  # Project scorecard (enterprise)
     └── policy-check.yml               # Policy evaluation (enterprise)
 ```
@@ -81,8 +87,8 @@ Auto-detects your project's language, framework, build tool, package manager, te
 | Tier           | For                  | Skills | What's generated                                  |
 | -------------- | -------------------- | ------ | ------------------------------------------------- |
 | **Lite**       | Solo dev, prototypes | 0      | Rules + hooks                                     |
-| **Standard**   | Teams, production    | 3      | Rules + skills + MCP + CI                         |
-| **Enterprise** | Organizations        | 7      | Standard + policies + scorecard + feature toggles |
+| **Standard**   | Teams, production    | 4      | Rules + skills + MCP + CI                         |
+| **Enterprise** | Organizations        | 8      | Standard + policies + scorecard + feature toggles |
 
 ### Skills by Tier
 
@@ -91,6 +97,7 @@ Auto-detects your project's language, framework, build tool, package manager, te
 | quality-gate       | -    | ✓           | ✓           |
 | security-check     | -    | ✓           | ✓           |
 | code-conscience    | -    | ✓           | ✓           |
+| test-autogen       | -    | ✓           | ✓           |
 | arch-review        | -    | -           | ✓           |
 | test-first         | -    | -           | ✓           |
 | dependency-audit   | -    | -           | ✓           |
@@ -152,6 +159,10 @@ npx forge-ai-init doctor
 # CI quality gate enforcement (exit code 0/1)
 npx forge-ai-init gate --phase production --threshold 80
 
+# Auto-generate and enforce tests for changed files
+npx forge-ai-init test-autogen --staged --write --check
+npx forge-ai-init test-autogen --check --json
+
 # Create project from golden path template
 npx forge-ai-init scaffold --template nextjs-app --name my-app
 ```
@@ -172,8 +183,19 @@ npx forge-ai-init scaffold --template nextjs-app --name my-app
 | `--compare`      | Compare against saved baseline (baseline command)   | `false`    |
 | `--phase <p>`    | Quality gate phase: foundation, stabilization, production | auto     |
 | `--threshold <n>`| Quality gate minimum score (0-100)                  | from config|
+| `--check`        | Enforce required generated artifacts (test-autogen) | `false`   |
+| `--write`        | Write missing generated artifacts (test-autogen)    | `false`   |
 | `--template <id>`| Scaffold template ID                                | -          |
 | `--name <name>`  | Project name (scaffold command)                     | -          |
+
+## Test-Autogen Local x CI Matrix
+
+| Guardrail | Local (developer machine) | CI / PR parity |
+|-----------|---------------------------|----------------|
+| Required tests for changed files | `npx forge-ai-init test-autogen --staged --write --check` (pre-commit) | `forge-ai-action` with `command: test-autogen-check` |
+| Full branch validation before push | `npx forge-ai-init test-autogen --check --json` (pre-push) | `test_autogen_phase=warn|phase1|phase2` |
+| Missing tests feedback | Hook failure with missing files | PR comment + annotations + status check |
+| Learning loop | `.forge/test-autogen-telemetry.jsonl` + baseline | Weekly workflow `.github/workflows/test-autogen-learning.yml` opens manual-review PR |
 
 ## Update Governance Files
 

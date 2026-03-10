@@ -20,6 +20,7 @@ import { generateSkills } from './generators/skills.js';
 import { generateSettings } from './generators/settings.js';
 import { generateMcpConfig } from './generators/mcp-config.js';
 import { generateWorkflows } from './generators/workflows.js';
+import { generateGitHooks } from './generators/git-hooks.js';
 import { generatePolicies } from './generators/policies.js';
 import { generateMigrationFiles } from './generators/migration.js';
 
@@ -189,6 +190,16 @@ export function updateProject(
       migrate,
     );
     for (const { path, content } of workflows) {
+      writeIfChanged(
+        join(dir, path),
+        content,
+        report,
+        dir,
+      );
+    }
+
+    const hooks = generateGitHooks(stack, tier);
+    for (const { path, content } of hooks) {
       writeIfChanged(
         join(dir, path),
         content,

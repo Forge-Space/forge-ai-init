@@ -15,6 +15,7 @@ import { generateSkills } from './generators/skills.js';
 import { generateSettings } from './generators/settings.js';
 import { generateMcpConfig } from './generators/mcp-config.js';
 import { generateWorkflows } from './generators/workflows.js';
+import { generateGitHooks } from './generators/git-hooks.js';
 import { generatePolicies } from './generators/policies.js';
 import { generateMigrationFiles } from './generators/migration.js';
 import { generateConfigFile } from './generators/config-scaffold.js';
@@ -150,6 +151,24 @@ function generateWorkflowFiles(
   }
 }
 
+function generateGitHookFiles(
+  dir: string,
+  stack: DetectedStack,
+  options: GenerateOptions,
+  result: GenerateResult,
+): void {
+  const hooks = generateGitHooks(stack, options.tier);
+  for (const { path, content } of hooks) {
+    writeIfNeeded(
+      join(dir, path),
+      content,
+      options.force,
+      options.dryRun,
+      result,
+    );
+  }
+}
+
 function generatePolicyFiles(
   dir: string,
   stack: DetectedStack,
@@ -204,6 +223,7 @@ export function generate(
   generateSkillFiles(dir, stack, options, result);
   generateMcpFile(dir, stack, options, result);
   generateWorkflowFiles(dir, stack, options, result);
+  generateGitHookFiles(dir, stack, options, result);
   generatePolicyFiles(dir, stack, options, result);
   generateMigrationDocs(dir, stack, options, result);
 

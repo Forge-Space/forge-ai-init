@@ -168,6 +168,7 @@ function checkSkills(dir: string): CheckResult[] {
       'quality-gate',
       'security-check',
       'code-conscience',
+      'test-autogen',
       'arch-review',
       'test-first',
       'migration-audit',
@@ -217,6 +218,14 @@ function checkHooks(dir: string): CheckResult[] {
         settings?.hooks?.PreToolUse?.length > 0;
       const hasPostHooks =
         settings?.hooks?.PostToolUse?.length > 0;
+      const preToolHooks = settings?.hooks?.PreToolUse ?? [];
+      const hasTestAutogenHook = preToolHooks.some((hook: {
+        hooks?: Array<{ command?: string }>;
+      }) =>
+        (hook.hooks ?? []).some((inner) =>
+          inner.command?.includes('test-autogen') ?? false,
+        ),
+      );
 
       results.push({
         name: 'Pre-tool hooks',
@@ -236,6 +245,16 @@ function checkHooks(dir: string): CheckResult[] {
           : 'No PostToolUse hooks — no auto-formatting',
         category: 'hooks',
         weight: 1,
+      });
+
+      results.push({
+        name: 'Test autogen hook',
+        status: hasTestAutogenHook ? 'pass' : 'warn',
+        detail: hasTestAutogenHook
+          ? 'Commit hook enforces test-autogen checks'
+          : 'No test-autogen hook — test requirements may be missed pre-commit',
+        category: 'hooks',
+        weight: 2,
       });
     } catch {
       results.push({

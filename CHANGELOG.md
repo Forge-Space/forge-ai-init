@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.25.0] - 2026-03-10
+
+### Added
+
+- New `test-autogen` command for default test generation and enforcement:
+  - `npx forge-ai-init test-autogen --staged --write --check`
+  - `npx forge-ai-init test-autogen --check --json`
+- New governance skill template: `.claude/skills/test-autogen/SKILL.md`
+- New generated git hooks for non-agent execution:
+  - `.githooks/pre-commit`
+  - `.githooks/pre-push`
+  - `scripts/hooks/install-hooks.sh`
+- New weekly learning workflow:
+  - `.github/workflows/test-autogen-learning.yml`
+  - Generates metadata-only learning report and opens a manual-review PR
+- Test-autogen telemetry and audit metadata:
+  - `.forge/test-autogen-telemetry.jsonl`
+  - `.forge/test-autogen-audit.jsonl`
+  - `.forge/test-autogen-baseline.json`
+- Checker now verifies `test-autogen` skill presence and `test-autogen` commit hook.
+
+### Changed
+
+- `generateSettings()` commit hook now runs test autogen before quality score gate.
+- Standard tier skills: 3 → 4. Enterprise tier skills: 7 → 8.
+
 ## [0.24.0] - 2026-03-09
 
 ### Changed

@@ -133,6 +133,14 @@ describe('New skills', () => {
     expect(content).toContain('SHIP IT');
   });
 
+  it('includes test-autogen for standard tier', () => {
+    const skills = generateSkills(makeStack(), 'standard');
+    expect(skills.has('test-autogen/SKILL.md')).toBe(true);
+    const content = skills.get('test-autogen/SKILL.md')!;
+    expect(content).toContain('# Test Autogen');
+    expect(content).toContain('test-autogen --staged --write --check');
+  });
+
   it('includes dependency-audit for enterprise', () => {
     const skills = generateSkills(makeStack(), 'enterprise');
     expect(skills.has('dependency-audit/SKILL.md')).toBe(true);
@@ -180,31 +188,31 @@ describe('New skills', () => {
     expect(content).toContain('Infrastructure Debt');
   });
 
-  it('standard tier has 3 skills (quality-gate, security-check, code-conscience)', () => {
+  it('standard tier has 4 skills', () => {
     const skills = generateSkills(makeStack(), 'standard');
-    expect(skills.size).toBe(3);
+    expect(skills.size).toBe(4);
   });
 
-  it('enterprise tier has 7 skills', () => {
+  it('enterprise tier has 8 skills', () => {
     const skills = generateSkills(makeStack(), 'enterprise');
-    expect(skills.size).toBe(7);
+    expect(skills.size).toBe(8);
   });
 
-  it('standard + migrate has 6 skills', () => {
+  it('standard + migrate has 7 skills', () => {
     const skills = generateSkills(
       makeStack(),
       'standard',
       true,
     );
-    expect(skills.size).toBe(6);
+    expect(skills.size).toBe(7);
   });
 
-  it('enterprise + migrate has 9 skills', () => {
+  it('enterprise + migrate has 10 skills', () => {
     const skills = generateSkills(
       makeStack(),
       'enterprise',
       true,
     );
-    expect(skills.size).toBe(9);
+    expect(skills.size).toBe(10);
   });
 });
