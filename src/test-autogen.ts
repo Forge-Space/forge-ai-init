@@ -48,6 +48,12 @@ interface BypassValidation {
 }
 
 const NODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
+const GIT_CANDIDATES = [
+  "/usr/bin/git",
+  "/usr/local/bin/git",
+  "/bin/git",
+  "C:\\Program Files\\Git\\cmd\\git.exe",
+];
 
 const SAFE_GIT_REF = /^[A-Za-z0-9._/-]+$/;
 
@@ -58,9 +64,16 @@ function sanitizeGitRef(ref?: string): string | undefined {
   return ref;
 }
 
+function resolveGitBinary(): string {
+  for (const candidate of GIT_CANDIDATES) {
+    if (existsSync(candidate)) return candidate;
+  }
+  throw new Error("Git binary not found in expected locations");
+}
+
 function runGitCommand(projectDir: string, args: string[]): string {
   try {
-    return execFileSync("git", args, {
+    return execFileSync(resolveGitBinary(), args, {
       cwd: projectDir,
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
