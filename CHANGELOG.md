@@ -12,6 +12,8 @@
 - Generated hooks/settings/test-autogen commands now include tenant arguments by default.
 - CI `quality-gate` now checks out `forge-tenant-profiles` with
   `FORGE_TENANT_PROFILES_READ_TOKEN` (fallback `GITHUB_TOKEN`) for private cross-repo access.
+- `quality-gate` now falls back to a local `acme-sandbox` profile when cross-repo checkout is
+  unavailable, keeping CI deterministic while preserving tenant-context enforcement.
 
 ### Fixed
 

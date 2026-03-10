@@ -203,6 +203,8 @@ npx forge-ai-init scaffold --template nextjs-app --name my-app
 
 For cross-repo tenant profile resolution in CI (`quality-gate`), set
 `FORGE_TENANT_PROFILES_READ_TOKEN` (fallback is `GITHUB_TOKEN`).
+If checkout is unavailable in the runner, CI creates a local `acme-sandbox` fallback profile
+to keep the gate executable.
 
 ## Update Governance Files
 

@@ -76,10 +76,36 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/checkout@v4
+        id: tenant_profiles_checkout
+        continue-on-error: true
         with:
           repository: Forge-Space/forge-tenant-profiles
           path: .forge-tenant-profiles
           token: ${{ secrets.FORGE_TENANT_PROFILES_READ_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Ensure tenant profile is available
+        run: |
+          PROFILE_PATH=".forge-tenant-profiles/tenants/acme-sandbox/profile.yaml"
+          if [ -f "$PROFILE_PATH" ]; then
+            echo "Using tenant profile from forge-tenant-profiles repository."
+            exit 0
+          fi
+
+          echo "Cross-repo checkout unavailable; creating local fallback profile."
+          mkdir -p "$(dirname "$PROFILE_PATH")"
+          cat > "$PROFILE_PATH" <<'YAML'
+          tenant_id: acme-sandbox
+          github_owner: acme-sandbox
+          sonar_org: acme-sandbox
+          npm_scope: "@acme-sandbox"
+          quality_policy:
+            min_quality_score: 60
+            block_on_critical: true
+            block_on_high: true
+          ci_policy:
+            require_sonar: true
+            require_security_scan: true
+            enforce_pr_checks: true
+          YAML
       - uses: Forge-Space/forge-ai-action@484c056b923dcd1b8f43c5a18dfa147c77bcb23b
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
