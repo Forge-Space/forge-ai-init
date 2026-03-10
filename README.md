@@ -201,11 +201,6 @@ npx forge-ai-init scaffold --template nextjs-app --name my-app
 | Missing tests feedback             | Hook failure with missing files                                        | PR comment + annotations + status check                                              |
 | Learning loop                      | `.forge/test-autogen-telemetry.jsonl` + baseline                       | Weekly workflow `.github/workflows/test-autogen-learning.yml` opens manual-review PR |
 
-For cross-repo tenant profile resolution in CI (`quality-gate`), set
-`FORGE_TENANT_PROFILES_READ_TOKEN` (fallback is `GITHUB_TOKEN`).
-If checkout is unavailable in the runner, CI creates a local `acme-sandbox` fallback profile
-to keep the gate executable.
-
 ## Update Governance Files
 
 Run `update` to re-generate governance files with the latest rules and patterns:
