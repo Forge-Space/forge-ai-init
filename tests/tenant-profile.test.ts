@@ -40,6 +40,21 @@ ci_policy:
   enforce_pr_checks: true
 `.trimStart();
 
+const YAML_PROFILE_WITH_COMMENTS = `
+tenant_id: acme-sandbox # tenant
+github_owner: acme-org
+sonar_org: acme-org
+npm_scope: "@acme"
+quality_policy:
+  min_quality_score: 80 # minimum score
+  block_on_critical: true
+  block_on_high: true
+ci_policy:
+  require_sonar: true
+  require_security_scan: true
+  enforce_pr_checks: true
+`.trimStart();
+
 describe('resolveTenantContext', () => {
   let tempDir = '';
 
@@ -61,6 +76,20 @@ describe('resolveTenantContext', () => {
 
     expect(context.tenantId).toBe('acme-sandbox');
     expect(context.profile.quality_policy.min_quality_score).toBe(80);
+  });
+
+  it('loads yaml profile with inline comments', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'tenant-with-comments.yaml');
+    writeFileSync(profilePath, YAML_PROFILE_WITH_COMMENTS);
+
+    const context = resolveTenantContext(tempDir, {
+      tenant: 'acme-sandbox',
+      'tenant-profile-ref': profilePath,
+    });
+
+    expect(context.profile.quality_policy.min_quality_score).toBe(80);
+    expect(context.profile.ci_policy.enforce_pr_checks).toBe(true);
   });
 
   it('supports environment variable fallback', () => {

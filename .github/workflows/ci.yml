@@ -79,6 +79,7 @@ jobs:
         with:
           repository: Forge-Space/forge-tenant-profiles
           path: .forge-tenant-profiles
+          token: ${{ secrets.FORGE_TENANT_PROFILES_READ_TOKEN || secrets.GITHUB_TOKEN }}
       - uses: Forge-Space/forge-ai-action@484c056b923dcd1b8f43c5a18dfa147c77bcb23b
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

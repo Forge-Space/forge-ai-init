@@ -10,6 +10,14 @@
 - Added tenant profile loader/validator with fail-fast behavior when profile is missing,
   unreadable, malformed, or mismatched with `--tenant`.
 - Generated hooks/settings/test-autogen commands now include tenant arguments by default.
+- CI `quality-gate` now checks out `forge-tenant-profiles` with
+  `FORGE_TENANT_PROFILES_READ_TOKEN` (fallback `GITHUB_TOKEN`) for private cross-repo access.
+
+### Fixed
+
+- Removed vulnerable regex parsing paths in `src/tenant-profile.ts` by replacing line parsing with
+  deterministic string-based parsing helpers.
+- Added regression coverage for YAML inline-comment profile parsing.
 
 ## [0.25.0] - 2026-03-10
 
