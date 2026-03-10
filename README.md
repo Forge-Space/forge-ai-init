@@ -160,8 +160,8 @@ npx forge-ai-init doctor
 npx forge-ai-init gate --phase production --threshold 80
 
 # Auto-generate and enforce tests for changed files
-npx forge-ai-init test-autogen --staged --write --check
-npx forge-ai-init test-autogen --check --json
+npx forge-ai-init test-autogen --staged --write --check --tenant "$FORGE_TENANT_ID" --tenant-profile-ref "$FORGE_TENANT_PROFILE_REF"
+npx forge-ai-init test-autogen --check --json --tenant "$FORGE_TENANT_ID" --tenant-profile-ref "$FORGE_TENANT_PROFILE_REF"
 
 # Create project from golden path template
 npx forge-ai-init scaffold --template nextjs-app --name my-app
@@ -174,6 +174,8 @@ npx forge-ai-init scaffold --template nextjs-app --name my-app
 | Flag              | Description                                               | Default     |
 | ----------------- | --------------------------------------------------------- | ----------- |
 | `--dir <path>`    | Target project directory                                  | `.`         |
+| `--tenant <id>`   | Tenant identifier (or `FORGE_TENANT_ID`)                 | required    |
+| `--tenant-profile-ref <path>` | Tenant profile file path (or `FORGE_TENANT_PROFILE_REF`) | required |
 | `--tier <level>`  | Governance tier: `lite`, `standard`, `enterprise`         | `standard`  |
 | `--tools <list>`  | AI tools: `claude`, `cursor`, `windsurf`, `copilot`       | `claude`    |
 | `--migrate`       | Legacy migration mode (extra rules + skills)              | `false`     |
@@ -194,8 +196,8 @@ npx forge-ai-init scaffold --template nextjs-app --name my-app
 
 | Guardrail                          | Local (developer machine)                                              | CI / PR parity                                                                       |
 | ---------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------ | ------- |
-| Required tests for changed files   | `npx forge-ai-init test-autogen --staged --write --check` (pre-commit) | `forge-ai-action` with `command: test-autogen-check`                                 |
-| Full branch validation before push | `npx forge-ai-init test-autogen --check --json` (pre-push)             | `test_autogen_phase=warn                                                             | phase1 | phase2` |
+| Required tests for changed files   | `npx forge-ai-init test-autogen --staged --write --check --tenant "$FORGE_TENANT_ID" --tenant-profile-ref "$FORGE_TENANT_PROFILE_REF"` (pre-commit) | `forge-ai-action` with `command: test-autogen-check`                                 |
+| Full branch validation before push | `npx forge-ai-init test-autogen --check --json --tenant "$FORGE_TENANT_ID" --tenant-profile-ref "$FORGE_TENANT_PROFILE_REF"` (pre-push)             | `test_autogen_phase=warn                                                             | phase1 | phase2` |
 | Missing tests feedback             | Hook failure with missing files                                        | PR comment + annotations + status check                                              |
 | Learning loop                      | `.forge/test-autogen-telemetry.jsonl` + baseline                       | Weekly workflow `.github/workflows/test-autogen-learning.yml` opens manual-review PR |
 

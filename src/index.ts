@@ -36,6 +36,7 @@ import {
   runTestAutogen,
   summarizeTestAutogen,
 } from './test-autogen.js';
+import { resolveTenantContext } from './tenant-profile.js';
 import type { AITool, DetectedStack, Tier } from './types.js';
 
 function formatStack(stack: DetectedStack): string {
@@ -116,6 +117,9 @@ ${pc.dim('Commands:')}
 
 ${pc.dim('Options:')}
   --dir <path>         Target project directory (default: .)
+  --tenant <id>        Tenant identifier (or FORGE_TENANT_ID)
+  --tenant-profile-ref <path>
+                       Tenant profile path (or FORGE_TENANT_PROFILE_REF)
   --tier <level>       Governance tier: lite, standard, enterprise
   --tools <list>       AI tools: claude,cursor,windsurf,copilot
   --migrate            Legacy migration mode (extra rules + skills)
@@ -166,8 +170,8 @@ ${pc.dim('Examples:')}
   npx forge-ai-init doctor --json
   npx forge-ai-init gate
   npx forge-ai-init gate --phase production --threshold 80
-  npx forge-ai-init test-autogen --staged --write --check
-  npx forge-ai-init test-autogen --check --json
+  npx forge-ai-init test-autogen --staged --write --check --tenant acme --tenant-profile-ref ./tenants/acme.yaml
+  npx forge-ai-init test-autogen --check --json --tenant acme --tenant-profile-ref ./tenants/acme.yaml
   npx forge-ai-init scaffold --template nextjs-app --name my-app
   npx forge-ai-init migrate-plan
   npx forge-ai-init migrate-plan --json
@@ -1761,6 +1765,14 @@ async function main(): Promise<void> {
   }
 
   const projectDir = resolve((opts['dir'] as string) ?? '.');
+  try {
+    resolveTenantContext(projectDir, opts);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(pc.red(`  ${message}`));
+    process.exit(1);
+  }
+
   const force = opts['force'] === true;
   const dryRun = opts['dry-run'] === true;
   const migrate = opts['migrate'] === true;

@@ -89,8 +89,9 @@ function preCommitHooks(tier: Tier): Hook[] {
 
   const threshold = tier === 'enterprise' ? 75 : 60;
   const qualityGateCmd = `npx forge-ai-init migrate --json 2>/dev/null | node -e "const r=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));if(r.score<${threshold}){console.error('BLOCK: Quality score '+r.score+'/${threshold}. Fix findings before committing.');process.exit(1)}else{console.log('Quality gate passed: '+r.score+'/100 ('+r.grade+')')}"`;
-  const testAutogenCmd =
-    'npx forge-ai-init test-autogen --staged --write --check';
+  const tenantArgs =
+    '--tenant "${FORGE_TENANT_ID:?FORGE_TENANT_ID is required}" --tenant-profile-ref "${FORGE_TENANT_PROFILE_REF:?FORGE_TENANT_PROFILE_REF is required}"';
+  const testAutogenCmd = `npx forge-ai-init test-autogen --staged --write --check ${tenantArgs}`;
 
   return [
     {

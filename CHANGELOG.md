@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Tenant context is now mandatory across commands:
+  - `--tenant <id>` (or `FORGE_TENANT_ID`)
+  - `--tenant-profile-ref <path>` (or `FORGE_TENANT_PROFILE_REF`)
+- Added tenant profile loader/validator with fail-fast behavior when profile is missing,
+  unreadable, malformed, or mismatched with `--tenant`.
+- Generated hooks/settings/test-autogen commands now include tenant arguments by default.
+
 ## [0.25.0] - 2026-03-10
 
 ### Added

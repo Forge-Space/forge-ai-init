@@ -63,6 +63,34 @@ export type AITool =
 
 export type Tier = 'lite' | 'standard' | 'enterprise';
 
+export interface TenantQualityPolicy {
+  min_quality_score: number;
+  block_on_critical: boolean;
+  block_on_high: boolean;
+}
+
+export interface TenantCiPolicy {
+  require_sonar: boolean;
+  require_security_scan: boolean;
+  enforce_pr_checks: boolean;
+}
+
+export interface TenantProfile {
+  tenant_id: string;
+  github_owner: string;
+  sonar_org: string;
+  npm_scope: string;
+  quality_policy: TenantQualityPolicy;
+  ci_policy: TenantCiPolicy;
+}
+
+export interface TenantContext {
+  tenantId: string;
+  profileRef: string;
+  profilePath: string;
+  profile: TenantProfile;
+}
+
 export interface DetectedStack {
   language: Language;
   framework?: Framework;

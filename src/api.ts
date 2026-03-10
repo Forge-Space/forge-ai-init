@@ -83,10 +83,16 @@ export {
   detectStack,
 } from './detector.js';
 
+export {
+  resolveTenantContext,
+} from './tenant-profile.js';
+
 export type {
   DetectedStack,
   Tier,
   AITool,
+  TenantProfile,
+  TenantContext,
 } from './types.js';
 
 export {
