@@ -10,10 +10,10 @@
 - Added tenant profile loader/validator with fail-fast behavior when profile is missing,
   unreadable, malformed, or mismatched with `--tenant`.
 - Generated hooks/settings/test-autogen commands now include tenant arguments by default.
-- CI `quality-gate` remains repository-scoped (no external tenant-profile checkout) to avoid
-  score distortion from files outside this repository.
 - `quality-gate` now runs `forge-ai-action` with `command: diff` to enforce PR regressions
   instead of failing on historical repository-wide debt.
+- CI `quality-gate` now checks out `forge-tenant-profiles`, validates tenant variables, and
+  fails fast when `FORGE_TENANT_ID` / `FORGE_TENANT_PROFILE_REF` are missing or invalid.
 
 ### Fixed
 

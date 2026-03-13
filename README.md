@@ -203,6 +203,16 @@ npx forge-ai-init scaffold --template nextjs-app --name my-app
 
 The default PR gate in this repository uses `forge-ai-action` `command: diff` to block
 regressions introduced by the PR delta without failing on pre-existing repository debt.
+
+### CI Tenant Contract
+
+The `quality-gate` job requires these repository variables:
+
+- `FORGE_TENANT_ID`
+- `FORGE_TENANT_PROFILE_REF`
+
+CI checks out `Forge-Space/forge-tenant-profiles` and fails fast when either variable is missing
+or when `FORGE_TENANT_PROFILE_REF` does not resolve to a file in the runner workspace.
 ## Update Governance Files
 
 Run `update` to re-generate governance files with the latest rules and patterns:
