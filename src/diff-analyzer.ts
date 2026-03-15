@@ -1,5 +1,7 @@
-import { execSync } from 'node:child_process';
-import { extname } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { extname, basename, join as pathJoin } from 'node:path';
+import { tmpdir } from 'node:os';
 import {
   scanProject,
   scanSpecificFiles,
@@ -39,16 +41,16 @@ function getChangedFiles(
   opts: DiffOptions,
 ): string[] {
   try {
-    let cmd: string;
+    let args: string[];
     if (opts.staged) {
-      cmd = 'git diff --cached --name-only';
+      args = ['diff', '--cached', '--name-only'];
     } else {
       const base = opts.base ?? 'main';
       const head = opts.head ?? 'HEAD';
-      cmd = `git diff --name-only ${base}...${head}`;
+      args = ['diff', '--name-only', `${base}...${head}`];
     }
 
-    const output = execSync(cmd, {
+    const output = execFileSync('git', args, {
       encoding: 'utf-8',
       cwd: dir,
     });
@@ -60,13 +62,57 @@ function getChangedFiles(
   }
 }
 
-function convertToNewFindings(findings: Finding[]): DiffFinding[] {
+function convertToFindings(findings: Finding[]): DiffFinding[] {
   return findings.map((f) => ({
     file: f.file,
     rule: f.rule,
     severity: f.severity,
     message: f.message,
   }));
+}
+
+function findingKey(f: DiffFinding): string {
+  return `${f.file}::${f.rule}::${f.message}`;
+}
+
+function getBaseFindings(
+  dir: string,
+  files: string[],
+  base: string,
+): DiffFinding[] {
+  let tmpDir: string | null = null;
+  try {
+    tmpDir = mkdtempSync(pathJoin(tmpdir(), 'forge-diff-'));
+    const tmpFiles: string[] = [];
+
+    for (const file of files) {
+      try {
+        const content = execFileSync(
+          'git',
+          ['-C', dir, 'show', `${base}:${file}`],
+          { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
+        );
+        const tmpFile = pathJoin(tmpDir, basename(file));
+        writeFileSync(tmpFile, content);
+        tmpFiles.push(tmpFile);
+      } catch {
+        // file didn't exist at base — new file, no base findings
+      }
+    }
+
+    if (tmpFiles.length === 0) return [];
+    const result = scanSpecificFiles(tmpDir, tmpFiles.map((f) => basename(f)));
+    return convertToFindings(result.findings).map((f) => ({
+      ...f,
+      file: files[tmpFiles.indexOf(pathJoin(tmpDir!, f.file))] ?? f.file,
+    }));
+  } catch {
+    return [];
+  } finally {
+    if (tmpDir) {
+      try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /**/ }
+    }
+  }
 }
 
 export function analyzeDiff(
@@ -98,12 +144,18 @@ export function analyzeDiff(
   const delta = afterScore - beforeScore;
   const improved = delta >= 0;
 
-  const newFindings = convertToNewFindings(
-    changedScanResult.findings,
-  );
+  const currentFindings = convertToFindings(changedScanResult.findings);
+  const currentKeys = new Set(currentFindings.map(findingKey));
+
+  const base = opts.staged ? 'HEAD' : (opts.base ?? 'main');
+  const baseFindings = getBaseFindings(dir, changedFiles, base);
+  const baseKeys = new Set(baseFindings.map(findingKey));
+
+  const newFindings = currentFindings.filter((f) => !baseKeys.has(findingKey(f)));
+  const resolvedFindings = baseFindings.filter((f) => !currentKeys.has(findingKey(f)));
 
   const summary = improved
-    ? `PR touches ${changedFiles.length} file${changedFiles.length === 1 ? '' : 's'}. Quality delta: +${delta} (improved)`
+    ? `PR touches ${changedFiles.length} file${changedFiles.length === 1 ? '' : 's'}. Quality delta: +${delta} (improved). ${resolvedFindings.length} finding${resolvedFindings.length === 1 ? '' : 's'} resolved.`
     : `PR touches ${changedFiles.length} file${changedFiles.length === 1 ? '' : 's'}. Quality delta: ${delta} (degraded). ${newFindings.length} new finding${newFindings.length === 1 ? '' : 's'}.`;
 
   return {
@@ -113,7 +165,7 @@ export function analyzeDiff(
     delta,
     improved,
     newFindings,
-    resolvedFindings: [],
+    resolvedFindings,
     summary,
   };
 }
