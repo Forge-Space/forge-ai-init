@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { extname, basename, join as pathJoin } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -41,16 +41,16 @@ function getChangedFiles(
   opts: DiffOptions,
 ): string[] {
   try {
-    let cmd: string;
+    let args: string[];
     if (opts.staged) {
-      cmd = 'git diff --cached --name-only';
+      args = ['diff', '--cached', '--name-only'];
     } else {
       const base = opts.base ?? 'main';
       const head = opts.head ?? 'HEAD';
-      cmd = `git diff --name-only ${base}...${head}`;
+      args = ['diff', '--name-only', `${base}...${head}`];
     }
 
-    const output = execSync(cmd, {
+    const output = execFileSync('git', args, {
       encoding: 'utf-8',
       cwd: dir,
     });
@@ -87,8 +87,9 @@ function getBaseFindings(
 
     for (const file of files) {
       try {
-        const content = execSync(
-          `git -C ${JSON.stringify(dir)} show ${base}:${file}`,
+        const content = execFileSync(
+          'git',
+          ['-C', dir, 'show', `${base}:${file}`],
           { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
         );
         const tmpFile = pathJoin(tmpDir, basename(file));
