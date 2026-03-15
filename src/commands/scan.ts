@@ -1,6 +1,6 @@
 import { watch } from 'node:fs';
 import { extname } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import pc from 'picocolors';
 import { scanProject, scanSpecificFiles } from '../scanner.js';
 import { formatReport, writeReport, type ReportFormat } from '../reporter.js';
@@ -11,11 +11,11 @@ import { parseTier, parseTools } from './parse.js';
 
 export function getStagedFiles(dir: string): string[] {
   try {
-    const output = execSync('git diff --cached --name-only', {
+    const output = execFileSync('git', ['diff', '--cached', '--name-only'], {
       cwd: dir,
       encoding: 'utf-8',
     });
-    return output.split('\n').map((f) => f.trim()).filter((f) => f.length > 0);
+    return output.split('\n').map((f: string) => f.trim()).filter((f: string) => f.length > 0);
   } catch {
     console.error(pc.red('  Not a git repository or git not available'));
     process.exit(1);
