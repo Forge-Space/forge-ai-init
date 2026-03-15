@@ -15,10 +15,23 @@ export function generateMcpConfig(
     args: ['-y', '@upstash/context7-mcp@latest'],
   };
 
-  if (stack.framework === 'nextjs' || stack.framework === 'remix') {
+  if (
+    stack.framework === 'nextjs' ||
+    stack.framework === 'remix' ||
+    stack.framework === 'sveltekit' ||
+    stack.framework === 'nuxt' ||
+    stack.framework === 'astro'
+  ) {
     servers['playwright'] = {
       command: 'npx',
       args: ['@playwright/mcp@latest'],
+    };
+  }
+
+  if (stack.language === 'python') {
+    servers['sequential-thinking'] = {
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-sequential-thinking'],
     };
   }
 
