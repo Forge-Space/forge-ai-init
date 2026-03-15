@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- **5 new language rule templates**: Go, Rust, Java, Kotlin, Svelte with 8–10 idiomatic
+  rules each — generated in CLAUDE.md/.cursorrules for detected stacks.
+- **Kotlin language detection** via `build.gradle.kts` + `.kt` source files.
+- **`src/shared.ts`** — consolidated shared utilities (walkFiles, scoreToGrade, readJson,
+  CODE_EXTENSIONS, IGNORE_DIRS) eliminating ~160 lines of duplication across 6 files.
+- **3 new test suites** for previously untested generators: skills (7 tests), mcp-config
+  (7 tests), config-scaffold (6 tests). Test count: 25→28 suites, 484→504 tests.
+- **`scripts/release.sh`** — automated release script handling version bump, CHANGELOG
+  promotion, tagging, and GitHub release creation.
+- Expanded MCP config: playwright now generated for SvelteKit/Nuxt/Astro;
+  sequential-thinking added for Python projects.
+
 ### Changed
 
 - Tenant context is now mandatory across commands:
@@ -14,6 +28,7 @@
   instead of failing on historical repository-wide debt.
 - CI `quality-gate` now checks out `forge-tenant-profiles`, validates tenant variables, and
   fails fast when `FORGE_TENANT_ID` / `FORGE_TENANT_PROFILE_REF` are missing or invalid.
+- Version strings in `reporter.ts` and `index.ts` now read dynamically from `package.json`.
 
 ### Fixed
 
