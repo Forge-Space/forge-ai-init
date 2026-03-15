@@ -1,0 +1,12 @@
+tenant_id: acme-sandbox
+github_owner: acme-sandbox
+sonar_org: acme-sandbox
+npm_scope: "@acme"
+quality_policy:
+  min_quality_score: 80
+  block_on_critical: true
+  block_on_high: true
+ci_policy:
+  require_sonar: true
+  require_security_scan: true
+  enforce_pr_checks: true
