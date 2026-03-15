@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **`resolvedFindings` in diff-analyzer** — was always `[]`; now computes by checking
+  out changed files at the base ref via `git show`, scanning them in a tmpdir, and
+  diffing findings by rule+message key. PR summary also updated to show resolved count.
+- **Shell injection hotspot** — replaced `execSync` with `execFileSync` (array args)
+  for all git invocations in `diff-analyzer.ts`.
+- **Reporter tests** — use `toMatch(/v\d+\.\d+\.\d+/)` instead of hardcoded version.
+
 ## [0.26.0] - 2026-03-15
 
 ### Added
