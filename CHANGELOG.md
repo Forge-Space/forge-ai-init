@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-03-15
+
 ### Added
 
 - **5 new language rule templates**: Go, Rust, Java, Kotlin, Svelte with 8–10 idiomatic
