@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Refactored `index.ts`** from 1927 → 97 lines into `src/commands/` modules.
+  All 13 command handlers extracted. Behavior unchanged.
+
 ## [0.26.1] - 2026-03-15
 
 ### Fixed
