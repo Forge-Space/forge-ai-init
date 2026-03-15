@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DetectedStack } from './types.js';
+import { type Grade, scoreToGrade } from './shared.js';
 
 export type CheckStatus = 'pass' | 'fail' | 'warn';
 
@@ -21,7 +22,7 @@ export type CheckCategory =
   | 'quality'
   | 'policies';
 
-export type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
+/* Grade re-exported from shared.ts */
 
 export interface AuditReport {
   checks: CheckResult[];
@@ -485,13 +486,7 @@ function checkPolicies(dir: string): CheckResult[] {
   return results;
 }
 
-function scoreToGrade(score: number): Grade {
-  if (score >= 90) return 'A';
-  if (score >= 75) return 'B';
-  if (score >= 60) return 'C';
-  if (score >= 40) return 'D';
-  return 'F';
-}
+/* scoreToGrade imported from shared.ts */
 
 export function runAudit(
   dir: string,

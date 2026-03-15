@@ -4,7 +4,8 @@ export type Language =
   | 'python'
   | 'go'
   | 'rust'
-  | 'java';
+  | 'java'
+  | 'kotlin';
 
 export type Framework =
   | 'nextjs'

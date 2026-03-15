@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import type { DetectedStack } from './types.js';
 import { scanProject, type ScanReport } from './scanner.js';
+import { IGNORE_DIRS } from './shared.js';
 
 export interface ArchPlan {
   stack: DetectedStack;
@@ -70,11 +71,7 @@ const CONFIG_EXTS = new Set([
   '.json', '.yml', '.yaml', '.toml', '.ini', '.env',
 ]);
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', '.next',
-  '__pycache__', '.venv', 'target', 'vendor',
-  '.turbo', '.cache', 'coverage',
-]);
+/* IGNORE_DIRS imported from shared.ts */
 
 function walkProjectFiles(
   dir: string,
