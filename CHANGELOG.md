@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.26.1] - 2026-03-15
+
 ### Fixed
 
 - **`resolvedFindings` in diff-analyzer** — was always `[]`; now computes by checking
