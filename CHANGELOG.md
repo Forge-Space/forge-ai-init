@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Externalized RULES array** from scanner.ts (1247→325 lines) into `src/rules/index.ts` (925 lines). 119 anti-pattern rules now independently editable without touching scanner logic.
+- Added `sonar-project.properties` with CPD exclusions for rules data files.
+
 ## [0.27.0] - 2026-03-15
 
 ### Changed
