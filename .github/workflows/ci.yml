@@ -72,30 +72,14 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/checkout@v4
-        with:
-          repository: Forge-Space/forge-tenant-profiles
-          path: .forge-tenant-profiles
-          token: ${{ secrets.FORGE_TENANT_PROFILES_READ_TOKEN || secrets.GITHUB_TOKEN }}
-      - name: Validate tenant context
+      - name: Validate inline tenant profile
         shell: bash
-        env:
-          FORGE_TENANT_ID: ${{ vars.FORGE_TENANT_ID }}
-          FORGE_TENANT_PROFILE_REF: ${{ vars.FORGE_TENANT_PROFILE_REF }}
         run: |
-          if [[ -z "${FORGE_TENANT_ID}" ]]; then
-            echo "::error::Missing required repo variable FORGE_TENANT_ID."
-            exit 1
-          fi
-          if [[ -z "${FORGE_TENANT_PROFILE_REF}" ]]; then
-            echo "::error::Missing required repo variable FORGE_TENANT_PROFILE_REF."
-            exit 1
-          fi
-          if [[ ! -f "${FORGE_TENANT_PROFILE_REF}" ]]; then
-            echo "::error::Tenant profile not found at ${FORGE_TENANT_PROFILE_REF}."
+          if [[ ! -f ".forge/tenant-profile.yaml" ]]; then
+            echo "::error::Inline tenant profile not found at .forge/tenant-profile.yaml"
             exit 1
           fi
       - uses: Forge-Space/forge-ai-action@1db6524858b544cb8051a4510e835d67818b24a2
@@ -104,5 +88,5 @@ jobs:
         with:
           command: diff
           threshold: 60
-          tenant: ${{ vars.FORGE_TENANT_ID }}
-          tenant_profile_ref: ${{ vars.FORGE_TENANT_PROFILE_REF }}
+          tenant: acme-sandbox
+          tenant_profile_ref: .forge/tenant-profile.yaml
