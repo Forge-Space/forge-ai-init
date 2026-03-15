@@ -1,4 +1,6 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { ScanReport } from './scanner.js';
 
 export type ReportFormat = 'json' | 'markdown' | 'sarif';
@@ -260,7 +262,13 @@ function sarifLevel(
 }
 
 function getVersion(): string {
-  return '0.25.0';
+  try {
+    const thisDir = fileURLToPath(new URL('.', import.meta.url));
+    const pkg = JSON.parse(readFileSync(join(thisDir, '..', 'package.json'), 'utf-8'));
+    return pkg.version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
 }
 
 

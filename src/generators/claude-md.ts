@@ -7,6 +7,11 @@ import { nodeRules } from '../templates/rules/node.js';
 import { pythonRules } from '../templates/rules/python.js';
 import { vueRules } from '../templates/rules/vue.js';
 import { expressRules } from '../templates/rules/express.js';
+import { goRules } from '../templates/rules/go.js';
+import { rustRules } from '../templates/rules/rust.js';
+import { javaRules } from '../templates/rules/java.js';
+import { kotlinRules } from '../templates/rules/kotlin.js';
+import { svelteRules } from '../templates/rules/svelte.js';
 import {
   aiGovernanceRules,
   aiAntiPatterns,
@@ -71,6 +76,10 @@ function frameworkRules(stack: DetectedStack): string {
     case 'flask':
       sections.push(pythonRules());
       break;
+    case 'svelte':
+    case 'sveltekit':
+      sections.push(svelteRules());
+      break;
     default:
       if (stack.language === 'python') {
         sections.push(pythonRules());
@@ -80,6 +89,18 @@ function frameworkRules(stack: DetectedStack): string {
         stack.language === 'typescript'
       ) {
         sections.push(nodeRules());
+      }
+      if (stack.language === 'go') {
+        sections.push(goRules());
+      }
+      if (stack.language === 'rust') {
+        sections.push(rustRules());
+      }
+      if (stack.language === 'java') {
+        sections.push(javaRules());
+      }
+      if (stack.language === 'kotlin') {
+        sections.push(kotlinRules());
       }
       break;
   }

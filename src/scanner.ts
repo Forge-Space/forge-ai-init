@@ -1,5 +1,10 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
+import {
+  CODE_EXTENSIONS,
+  walkFiles,
+  scoreToGrade,
+} from './shared.js';
 import {
   loadConfig,
   isRuleDisabled,
@@ -987,79 +992,7 @@ const RULES: Rule[] = [
   },
 ];
 
-const CODE_EXTENSIONS = new Set([
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.cjs',
-  '.py',
-  '.go',
-  '.rs',
-  '.java',
-  '.kt',
-  '.kts',
-  '.vue',
-  '.svelte',
-  '.properties',
-  '.yml',
-  '.yaml',
-]);
-
-const IGNORE_DIRS = new Set([
-  'node_modules',
-  '.git',
-  'dist',
-  'build',
-  '.next',
-  '__pycache__',
-  '.venv',
-  'venv',
-  'target',
-  'coverage',
-  '.turbo',
-  '.cache',
-]);
-
-function walkFiles(
-  dir: string,
-  maxFiles: number,
-): string[] {
-  const files: string[] = [];
-
-  function walk(current: string): void {
-    if (files.length >= maxFiles) return;
-    let entries;
-    try {
-      entries = readdirSync(current);
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      if (files.length >= maxFiles) return;
-      if (IGNORE_DIRS.has(entry)) continue;
-      if (entry.startsWith('.')) continue;
-      const full = join(current, entry);
-      try {
-        const stat = statSync(full);
-        if (stat.isDirectory()) {
-          walk(full);
-        } else if (
-          stat.isFile() &&
-          CODE_EXTENSIONS.has(extname(entry))
-        ) {
-          files.push(full);
-        }
-      } catch {
-        continue;
-      }
-    }
-  }
-
-  walk(dir);
-  return files;
-}
+/* walkFiles, CODE_EXTENSIONS, IGNORE_DIRS imported from shared.ts */
 
 function checkFileSize(
   relPath: string,
@@ -1195,15 +1128,8 @@ function scoreFromFindings(findings: Finding[]): number {
   return Math.max(0, Math.min(100, 100 - penalty));
 }
 
-function gradeFromScore(
-  score: number,
-): ScanReport['grade'] {
-  if (score >= 90) return 'A';
-  if (score >= 75) return 'B';
-  if (score >= 60) return 'C';
-  if (score >= 40) return 'D';
-  return 'F';
-}
+/* gradeFromScore imported as scoreToGrade from shared.ts */
+const gradeFromScore = scoreToGrade;
 
 function buildReport(
   allFindings: Finding[],

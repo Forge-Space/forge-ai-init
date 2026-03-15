@@ -6,6 +6,7 @@ import {
   type Finding,
 } from './scanner.js';
 import { loadBaseline } from './baseline.js';
+import { CODE_EXTENSIONS } from './shared.js';
 
 export interface DiffOptions {
   base?: string;
@@ -31,22 +32,7 @@ export interface DiffFinding {
   message: string;
 }
 
-const CODE_EXTENSIONS = new Set([
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.cjs',
-  '.py',
-  '.go',
-  '.rs',
-  '.java',
-  '.kt',
-  '.kts',
-  '.vue',
-  '.svelte',
-]);
+/* CODE_EXTENSIONS imported from shared.ts */
 
 function getChangedFiles(
   dir: string,

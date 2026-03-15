@@ -1,11 +1,15 @@
 import {
   existsSync,
   readFileSync,
-  readdirSync,
-  statSync,
 } from 'node:fs';
-import { join, relative, extname } from 'node:path';
+import { join, relative } from 'node:path';
 import type { DetectedStack } from './types.js';
+import {
+  type Grade,
+  walkFiles,
+  scoreToGrade,
+  readJson,
+} from './shared.js';
 
 export type AssessmentCategory =
   | 'dependencies'
@@ -34,7 +38,7 @@ export interface CategoryScore {
   high: number;
 }
 
-export type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
+export type { Grade };
 
 export interface AssessmentReport {
   findings: AssessmentFinding[];
@@ -54,70 +58,7 @@ const SEVERITY_WEIGHTS: Record<Severity, number> = {
   low: 1,
 };
 
-const CODE_EXTENSIONS = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
-  '.py', '.go', '.rs', '.java', '.vue', '.svelte',
-  '.php', '.rb', '.cs',
-]);
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', '.next',
-  '__pycache__', '.venv', 'venv', 'target', 'coverage',
-  '.turbo', '.cache', 'vendor', '.bundle',
-]);
-
-function walkFiles(dir: string, max: number): string[] {
-  const files: string[] = [];
-  function walk(current: string): void {
-    if (files.length >= max) return;
-    let entries;
-    try {
-      entries = readdirSync(current);
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      if (files.length >= max) return;
-      if (IGNORE_DIRS.has(entry) || entry.startsWith('.')) {
-        continue;
-      }
-      const full = join(current, entry);
-      try {
-        const stat = statSync(full);
-        if (stat.isDirectory()) {
-          walk(full);
-        } else if (
-          stat.isFile() &&
-          CODE_EXTENSIONS.has(extname(entry))
-        ) {
-          files.push(full);
-        }
-      } catch {
-        continue;
-      }
-    }
-  }
-  walk(dir);
-  return files;
-}
-
-function readJson(
-  path: string,
-): Record<string, unknown> | null {
-  try {
-    return JSON.parse(readFileSync(path, 'utf-8'));
-  } catch {
-    return null;
-  }
-}
-
-function scoreToGrade(score: number): Grade {
-  if (score >= 90) return 'A';
-  if (score >= 75) return 'B';
-  if (score >= 60) return 'C';
-  if (score >= 40) return 'D';
-  return 'F';
-}
+/* walkFiles, scoreToGrade, readJson, CODE_EXTENSIONS, IGNORE_DIRS imported from shared.ts */
 
 function collectDependencyFindings(
   dir: string,

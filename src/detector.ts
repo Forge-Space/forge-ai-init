@@ -9,14 +9,7 @@ import type {
   PackageManager,
   TestFramework,
 } from './types.js';
-
-function readJson(path: string): Record<string, unknown> | null {
-  try {
-    return JSON.parse(readFileSync(path, 'utf-8'));
-  } catch {
-    return null;
-  }
-}
+import { readJson } from './shared.js';
 
 function fileExists(dir: string, ...names: string[]): boolean {
   return names.some((n) => existsSync(join(dir, n)));
@@ -92,12 +85,25 @@ function findFileRecursive(
   return false;
 }
 
+function hasKotlinSources(dir: string): boolean {
+  const srcDir = join(dir, 'src');
+  if (!existsSync(srcDir)) return false;
+  try {
+    const entries = readdirSync(srcDir, { withFileTypes: true, recursive: true });
+    return entries.some((e) => e.name.endsWith('.kt') || e.name.endsWith('.kts'));
+  } catch {
+    return false;
+  }
+}
+
 function detectLanguage(dir: string): Language {
   if (fileExists(dir, 'tsconfig.json', 'tsconfig.base.json'))
     return 'typescript';
   if (findFileRecursive(dir, 'tsconfig.json', 2)) return 'typescript';
   if (fileExists(dir, 'Cargo.toml')) return 'rust';
   if (fileExists(dir, 'go.mod')) return 'go';
+  if (fileExists(dir, 'build.gradle.kts') && hasKotlinSources(dir))
+    return 'kotlin';
   if (fileExists(dir, 'pom.xml', 'build.gradle', 'build.gradle.kts'))
     return 'java';
   if (
