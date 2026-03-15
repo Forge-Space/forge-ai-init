@@ -1,5 +1,12 @@
 # forge-ai-init
 
+[![CI](https://github.com/Forge-Space/forge-ai-init/actions/workflows/ci.yml/badge.svg)](https://github.com/Forge-Space/forge-ai-init/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/forge-ai-init)](https://www.npmjs.com/package/forge-ai-init)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-green)](https://nodejs.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
+
 **AI Governance Layer** — one command to add AI coding rules, skills, hooks, and quality gates to any project.
 
 AI tools generate code fast, but without governance: no architecture patterns, no security rules, no quality gates, no technical conscience. `forge-ai-init` adds the missing layer.
