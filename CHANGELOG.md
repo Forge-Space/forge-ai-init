@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-03-15
+
 ### Changed
 
 - **Externalized RULES array** from scanner.ts (1247→325 lines) into `src/rules/index.ts` (925 lines). 119 anti-pattern rules now independently editable without touching scanner logic.
