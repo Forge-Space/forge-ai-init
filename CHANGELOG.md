@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-03-15
+
 ### Changed
 
 - **Refactored `index.ts`** from 1927 → 97 lines into `src/commands/` modules.
