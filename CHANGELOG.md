@@ -4,6 +4,8 @@
 
 ## [0.36.0] - 2026-03-16
 
+## [0.36.0] - 2026-03-16
+
 ### Added
 
 - **Coverage push to 90%+ branches across 6 files** — 40 new tests in `tests/updater.test.ts` (+6), `tests/gate.test.ts` (+7), `tests/generator.test.ts` (new, 12 tests), `tests/tenant-profile.test.ts` (+8), `tests/assessor.test.ts` (+3), `tests/test-autogen-unit.test.ts` (+4). Covers updater.ts (copilot detection, lite tier, catch block, windsurf/copilot tool branches), gate.ts (stabilization auto-detection, tier thresholds, violation blocking), generator.ts (cursor/windsurf/copilot tool branches, skills, mcp config guard, workflow and migration flags), tenant-profile.ts (unsupported extension, missing fields, file:// URL, path errors, env var fallback), assessors/security.ts (no .gitignore, unreadable file catch, 10-finding cap), telemetry.ts (new baseline creation, accumulation, directory creation). Test count: 948→988, suites: 54→55.
