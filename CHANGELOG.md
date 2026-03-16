@@ -4,6 +4,8 @@
 
 ## [0.30.0] - 2026-03-15
 
+## [0.30.0] - 2026-03-15
+
 ### Changed
 
 - **Refactored `src/test-autogen.ts`** (567→22 lines) into `src/test-autogen/` sub-modules (`types.ts`, `git.ts`, `classifiers.ts`, `requirements.ts`, `templates.ts`, `bypass.ts`, `telemetry.ts`, `index.ts`). Public `runTestAutogen()` API unchanged.
