@@ -4,6 +4,8 @@
 
 ## [0.32.0] - 2026-03-16
 
+## [0.32.0] - 2026-03-16
+
 ### Changed
 
 - **Refactored `src/detector.ts`** (338→1 lines) into `src/detector/` sub-modules (`utils.ts`, `language.ts`, `framework.ts`, `tooling.ts`, `commands.ts`, `index.ts`). Public `detectStack()` API unchanged.
