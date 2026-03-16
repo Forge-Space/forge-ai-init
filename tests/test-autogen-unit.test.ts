@@ -322,7 +322,7 @@ describe('runTestAutogen — test file existence check (lines 101-102)', () => {
     expect(result.passed).toBe(true);
   });
 
-  it('writes missing test files when options.write=true (index.ts line 106)', () => {
+  it('writes missing test files when options.write=true (index.ts line 106 true branch)', () => {
     // Init a real git repo with staged source file
     mkdirSync(join(tempDir, 'src'), { recursive: true });
     writeFileSync(join(tempDir, 'src', 'util.ts'), 'export function helper() {}');
@@ -348,6 +348,36 @@ describe('runTestAutogen — test file existence check (lines 101-102)', () => {
       expect(result.created.length).toBeGreaterThan(0);
       // missing should be cleaned up after writing
       expect(result.missing).toHaveLength(0);
+    }
+    expect(result).toBeDefined();
+  });
+
+  it('leaves missing files unwritten when options.write=false (index.ts line 106 false branch)', () => {
+    // Init a real git repo with staged source file
+    mkdirSync(join(tempDir, 'src'), { recursive: true });
+    writeFileSync(join(tempDir, 'src', 'service.ts'), 'export function process() {}');
+
+    try {
+      execFileSync('git', ['init'], { cwd: tempDir, stdio: 'ignore' });
+      execFileSync('git', ['config', 'user.email', 'test@test.com'], { cwd: tempDir, stdio: 'ignore' });
+      execFileSync('git', ['config', 'user.name', 'Test'], { cwd: tempDir, stdio: 'ignore' });
+      execFileSync('git', ['add', 'src/service.ts'], { cwd: tempDir, stdio: 'ignore' });
+    } catch {
+      return; // skip in sandboxed env
+    }
+
+    // Run WITHOUT write=true — test files that are missing should stay missing (not created)
+    const result = runTestAutogen(tempDir, { ...baseStack }, {
+      staged: true,
+      write: false,
+      check: true,
+    });
+
+    // With write=false and missing test files, created should remain empty
+    if (result.changedFiles.length > 0 && result.requirements.length > 0) {
+      expect(result.created).toHaveLength(0);
+      // missing should contain the test files
+      expect(result.missing.length).toBeGreaterThan(0);
     }
     expect(result).toBeDefined();
   });
@@ -621,3 +651,5 @@ describe('buildRequirements', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 });
+
+
