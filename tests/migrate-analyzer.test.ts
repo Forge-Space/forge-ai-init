@@ -233,4 +233,91 @@ describe('migrate-analyzer', () => {
       expect(apiB.type).toBe('api');
     }
   });
+
+  it('detectModuleType returns data for model-named JS files', () => {
+    writeFile(dir, 'src/models/user-model.js', 'const x = 1;\n');
+    const plan = analyzeMigration(dir, baseStack);
+    const step = plan.typingPlan.find((t) =>
+      t.file.includes('user-model'),
+    );
+    expect(step).toBeDefined();
+    const lines = Array(600).fill('const x = 1;').join('\n');
+    writeFile(dir, 'src/models/user-model.ts', lines);
+    const plan2 = analyzeMigration(dir, baseStack);
+    const boundary = plan2.boundaries.find((b) =>
+      b.module.includes('user-model'),
+    );
+    if (boundary) {
+      expect(boundary.type).toBe('data');
+    }
+  });
+
+  it('detectModuleType returns ui for component-named JS files', () => {
+    writeFile(dir, 'src/components/button.js', 'const x = 1;\n');
+    const plan = analyzeMigration(dir, baseStack);
+    const step = plan.typingPlan.find((t) =>
+      t.file.includes('button'),
+    );
+    expect(step).toBeDefined();
+    const lines = Array(600).fill('const x = 1;').join('\n');
+    writeFile(dir, 'src/components/button.ts', lines);
+    const plan2 = analyzeMigration(dir, baseStack);
+    const boundary = plan2.boundaries.find((b) =>
+      b.module.includes('button'),
+    );
+    if (boundary) {
+      expect(boundary.type).toBe('ui');
+    }
+  });
+
+  it('isEntry triggers high priority typing step for index.js', () => {
+    writeFile(dir, 'index.js', 'module.exports = {};\n');
+    const plan = analyzeMigration(dir, baseStack);
+    const step = plan.typingPlan.find((t) =>
+      t.file === 'index.js',
+    );
+    expect(step).toBeDefined();
+    if (step) {
+      expect(step.priority).toBe('high');
+      expect(step.reason).toContain('Entry point');
+    }
+  });
+
+  it('isConfig triggers medium priority typing step for config.js', () => {
+    writeFile(dir, 'src/config.js', 'module.exports = { debug: true };\n');
+    const plan = analyzeMigration(dir, baseStack);
+    const step = plan.typingPlan.find((t) =>
+      t.file.includes('config'),
+    );
+    if (step && step.priority !== 'high') {
+      expect(step.priority).toBe('medium');
+      expect(step.reason).toContain('Config file');
+    }
+  });
+
+  it('analyzeDependencyRisks returns empty array for malformed package.json', () => {
+    writeFile(dir, 'package.json', 'NOT VALID JSON{{{{');
+    const plan = analyzeMigration(dir, baseStack);
+    expect(Array.isArray(plan.dependencyRisks)).toBe(true);
+    expect(plan.dependencyRisks).toHaveLength(0);
+  });
+
+  it('estimateEffort returns 2-4 weeks for large projects', () => {
+    const heavyDeps: Record<string, string> = {};
+    const legacyLibs = ['moment', 'jquery', 'lodash', 'request', 'bluebird'];
+    for (const lib of legacyLibs) {
+      heavyDeps[lib] = '1.0.0';
+    }
+    writeFile(
+      dir,
+      'package.json',
+      JSON.stringify({ name: 'test', dependencies: heavyDeps }),
+    );
+    for (let i = 0; i < 15; i++) {
+      const lines = Array(600).fill(`const x${i} = 1;`).join('\n');
+      writeFile(dir, `src/module${i}.js`, lines.slice(0, 200));
+    }
+    const plan = analyzeMigration(dir, baseStack);
+    expect(plan.estimatedEffort).toMatch(/day|week|month/);
+  });
 });

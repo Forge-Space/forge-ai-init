@@ -191,5 +191,65 @@ describe('generateWorkflows', () => {
       );
       expect(files[0]!.content).toContain('allow_failure: true');
     });
+
+    it('uses yarn install for yarn packageManager in GitLab CI', () => {
+      const files = generateWorkflows(
+        makeStack({ ciProvider: 'gitlab-ci', packageManager: 'yarn' }),
+        'standard',
+        'gitlab-ci',
+      );
+      expect(files[0]!.content).toContain('yarn install --frozen-lockfile');
+    });
+
+    it('omits lint stage when lintCommand is undefined', () => {
+      const files = generateWorkflows(
+        makeStack({
+          ciProvider: 'gitlab-ci',
+          lintCommand: undefined,
+          hasLinting: false,
+        }),
+        'standard',
+        'gitlab-ci',
+      );
+      const content = files[0]!.content;
+      expect(content).not.toContain('stage: lint');
+    });
+
+    it('omits build stage when buildCommand is undefined', () => {
+      const files = generateWorkflows(
+        makeStack({
+          ciProvider: 'gitlab-ci',
+          buildCommand: undefined,
+        }),
+        'standard',
+        'gitlab-ci',
+      );
+      const content = files[0]!.content;
+      expect(content).not.toContain('stage: build');
+    });
+  });
+
+  describe('yarn packageManager support', () => {
+    it('uses yarn cache and yarn install in GitHub CI', () => {
+      const files = generateWorkflows(
+        makeStack({ packageManager: 'yarn' }),
+        'standard',
+      );
+      const ci = files.find((f) => f.path.includes('ci.yml'));
+      expect(ci!.content).toContain('cache: yarn');
+      expect(ci!.content).toContain('yarn install --frozen-lockfile');
+    });
+
+    it('enterprise tier scorecard uses yarn cache for yarn projects', () => {
+      const files = generateWorkflows(
+        makeStack({ packageManager: 'yarn' }),
+        'enterprise',
+      );
+      const scorecard = files.find((f) =>
+        f.path.includes('scorecard.yml'),
+      );
+      expect(scorecard!.content).toContain('cache: yarn');
+      expect(scorecard!.content).toContain('yarn install --frozen-lockfile');
+    });
   });
 });

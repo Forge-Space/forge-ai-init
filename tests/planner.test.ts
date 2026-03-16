@@ -185,4 +185,60 @@ describe('planner', () => {
       ),
     ).toBe(true);
   });
+
+  it('determines scaling strategy for spring framework', () => {
+    const springStack = {
+      ...baseStack,
+      language: 'java' as const,
+      framework: 'spring' as const,
+    };
+    const plan = generatePlan(dir, springStack);
+    expect(plan.scalingStrategy).toContain('JVM');
+  });
+
+  it('determines scaling strategy for go language', () => {
+    const goStack = {
+      ...baseStack,
+      language: 'go' as const,
+      framework: undefined,
+    };
+    const plan = generatePlan(dir, goStack);
+    expect(plan.scalingStrategy).toContain('Goroutine');
+  });
+
+  it('determines scaling strategy for rust language', () => {
+    const rustStack = {
+      ...baseStack,
+      language: 'rust' as const,
+      framework: undefined,
+    };
+    const plan = generatePlan(dir, rustStack);
+    expect(plan.scalingStrategy).toContain('tokio');
+  });
+
+  it('determines fallback scaling strategy for plain node projects', () => {
+    const plainNodeStack = {
+      ...baseStack,
+      framework: undefined,
+      language: 'typescript' as const,
+    };
+    const plan = generatePlan(dir, plainNodeStack);
+    expect(plan.scalingStrategy).toContain('vertical');
+  });
+
+  it('detects security risk when source file contains a hardcoded secret', () => {
+    writeFile(
+      dir,
+      'src/config.ts',
+      'const API_KEY = "sk-1234567890abcdef1234567890abcdef";\n',
+    );
+    const plan = generatePlan(dir, baseStack);
+    const hasSecurityRisk = plan.risks.some(
+      (r) => r.area === 'security',
+    );
+    const hasSecurityRec = plan.recommendations.some(
+      (r) => r.category === 'security',
+    );
+    expect(hasSecurityRisk || hasSecurityRec).toBe(true);
+  });
 });

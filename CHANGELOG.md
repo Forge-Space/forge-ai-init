@@ -2,7 +2,21 @@
 
 ## [Unreleased]
 
-## [0.30.0] - 2026-03-15
+## [0.31.0] - 2026-03-15
+
+### Changed
+
+- **Refactored `src/generators/workflows.ts`** (429→1 lines) into `src/generators/workflows/` sub-modules (`orchestrator.ts`, `github-ci.ts`, `github-enterprise.ts`, `github-autogen.ts`, `gitlab-ci.ts`). Public `generateWorkflows()` API unchanged.
+- **Refactored `src/migrate-analyzer.ts`** (407→2 lines) into `src/migrate-analyzer/` sub-modules (`types.ts`, `strategy.ts`, `boundaries.ts`, `typing-needs.ts`, `dependency-risks.ts`, `phases.ts`, `analyzer.ts`). Consolidated `IGNORE_DIRS` from inline duplicate to `src/shared.ts`. Public `analyzeMigration()` API unchanged.
+- **Refactored `src/planner.ts`** (384→1 lines) into `src/planner/` sub-modules (`types.ts`, `walker.ts`, `structure.ts`, `risks.ts`, `recommendations.ts`, `strategy.ts`, `planner.ts`). Public `generatePlan()` API unchanged.
+
+### Added
+
+- **Coverage push to 85%+ branches** — 42 new tests across `tests/planner.test.ts`, `tests/migrate-analyzer.test.ts`, `tests/generators/workflows.test.ts`, and `tests/test-autogen-unit.test.ts`. Suite count: 53→54, test count: 823→865.
+
+### Coverage
+
+- Overall: 93.98% statements, **85.93% branches**, 97.25% functions, 95.73% lines.
 
 ## [0.30.0] - 2026-03-15
 
