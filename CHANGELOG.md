@@ -4,6 +4,8 @@
 
 ## [0.31.0] - 2026-03-15
 
+## [0.31.0] - 2026-03-15
+
 ### Changed
 
 - **Refactored `src/generators/workflows.ts`** (429→1 lines) into `src/generators/workflows/` sub-modules (`orchestrator.ts`, `github-ci.ts`, `github-enterprise.ts`, `github-autogen.ts`, `gitlab-ci.ts`). Public `generateWorkflows()` API unchanged.
