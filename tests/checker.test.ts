@@ -340,4 +340,289 @@ describe('checker', () => {
     );
     expect(securityCheck?.status).toBe('pass');
   });
+
+  // hooks.ts gaps
+
+  it('warns when settings.json exists but has no hooks', () => {
+    tempDir = createProject({
+      '.claude/settings.json': '{}',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const preHook = report.checks.find(
+      (c) => c.name === 'Pre-tool hooks',
+    );
+    expect(preHook?.status).toBe('warn');
+
+    const postHook = report.checks.find(
+      (c) => c.name === 'Post-tool hooks',
+    );
+    expect(postHook?.status).toBe('warn');
+
+    const autogenHook = report.checks.find(
+      (c) => c.name === 'Test autogen hook',
+    );
+    expect(autogenHook?.status).toBe('warn');
+  });
+
+  it('warns on test autogen hook when PreToolUse has no test-autogen command', () => {
+    tempDir = createProject({
+      '.claude/settings.json': JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            { hooks: [{ command: 'npm run lint' }] },
+          ],
+          PostToolUse: [{ matcher: 'test', hooks: [{ command: 'echo done' }] }],
+        },
+      }),
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const autogenHook = report.checks.find(
+      (c) => c.name === 'Test autogen hook',
+    );
+    expect(autogenHook?.status).toBe('warn');
+  });
+
+  it('warns on test autogen hook when hook entry has no command field', () => {
+    tempDir = createProject({
+      '.claude/settings.json': JSON.stringify({
+        hooks: {
+          PreToolUse: [{ hooks: [{}] }],
+        },
+      }),
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const autogenHook = report.checks.find(
+      (c) => c.name === 'Test autogen hook',
+    );
+    expect(autogenHook?.status).toBe('warn');
+  });
+
+  it('warns with Settings parse check on malformed settings.json', () => {
+    tempDir = createProject({
+      '.claude/settings.json': 'INVALID JSON {{{',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const parseCheck = report.checks.find(
+      (c) => c.name === 'Settings parse',
+    );
+    expect(parseCheck?.status).toBe('warn');
+  });
+
+  // skills.ts gaps
+
+  it('warns skill coverage when 3 SKILL.md files are present', () => {
+    tempDir = createProject({
+      '.claude/skills/quality-gate/SKILL.md': 'skill',
+      '.claude/skills/security-check/SKILL.md': 'skill',
+      '.claude/skills/code-conscience/SKILL.md': 'skill',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const skillCoverage = report.checks.find(
+      (c) => c.name === 'Skill coverage',
+    );
+    expect(skillCoverage?.status).toBe('warn');
+    expect(skillCoverage?.detail).toContain('3 of 10');
+  });
+
+  it('fails skill coverage when only 1 SKILL.md file is present', () => {
+    tempDir = createProject({
+      '.claude/skills/quality-gate/SKILL.md': 'skill',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const skillCoverage = report.checks.find(
+      (c) => c.name === 'Skill coverage',
+    );
+    expect(skillCoverage?.status).toBe('fail');
+  });
+
+  // ci.ts gaps
+
+  it('passes CI check when only .gitlab-ci.yml is present', () => {
+    tempDir = createProject({
+      '.gitlab-ci.yml': 'stages: [test]',
+    });
+
+    const report = runAudit(
+      tempDir,
+      makeStack({ hasCi: false, ciProvider: undefined }),
+    );
+
+    const ciCheck = report.checks.find(
+      (c) => c.name === 'CI/CD pipeline',
+    );
+    expect(ciCheck?.status).toBe('pass');
+    expect(ciCheck?.detail).toContain('GitLab CI');
+  });
+
+  it('passes CI check from stack.hasCi with ciProvider shown in detail', () => {
+    tempDir = createProject({
+      'package.json': '{}',
+    });
+
+    const report = runAudit(
+      tempDir,
+      makeStack({ hasCi: true, ciProvider: 'circleci' }),
+    );
+
+    const ciCheck = report.checks.find(
+      (c) => c.name === 'CI/CD pipeline',
+    );
+    expect(ciCheck?.status).toBe('pass');
+    expect(ciCheck?.detail).toContain('circleci');
+  });
+
+  it('warns secret scanning and security scanning when GitHub Actions has no scan files', () => {
+    tempDir = createProject({
+      '.github/workflows/ci.yml': 'name: CI',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const secretCheck = report.checks.find(
+      (c) => c.name === 'Secret scanning',
+    );
+    expect(secretCheck?.status).toBe('warn');
+
+    const securityCheck = report.checks.find(
+      (c) => c.name === 'Security scanning',
+    );
+    expect(securityCheck?.status).toBe('warn');
+  });
+
+  it('passes secret scanning with trufflehog and security scanning with trivy', () => {
+    tempDir = createProject({
+      '.github/workflows/ci.yml': 'name: CI',
+      '.github/workflows/trufflehog.yml': 'name: Secrets',
+      '.github/workflows/trivy.yml': 'name: Security',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const secretCheck = report.checks.find(
+      (c) => c.name === 'Secret scanning',
+    );
+    expect(secretCheck?.status).toBe('pass');
+
+    const securityCheck = report.checks.find(
+      (c) => c.name === 'Security scanning',
+    );
+    expect(securityCheck?.status).toBe('pass');
+  });
+
+  // rules.ts gaps
+
+  it('warns multi-tool rules when toolCount is 1 (only .cursorrules, no CLAUDE.md)', () => {
+    tempDir = createProject({
+      '.cursorrules': 'rules',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const multiTool = report.checks.find(
+      (c) => c.name === 'Multi-tool rules',
+    );
+    expect(multiTool?.status).toBe('warn');
+  });
+
+  it('warns multi-tool rules when only CLAUDE.md and no other tool files', () => {
+    tempDir = createProject({
+      'CLAUDE.md': '# Rules\n## AI Code Governance\n## Anti-Patterns\n',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const multiTool = report.checks.find(
+      (c) => c.name === 'Multi-tool rules',
+    );
+    expect(multiTool?.status).toBe('warn');
+    expect(multiTool?.detail).toContain('CLAUDE.md');
+  });
+
+  it('warns anti-pattern rules when CLAUDE.md has governance but no Anti-Patterns section', () => {
+    tempDir = createProject({
+      'CLAUDE.md': '# Rules\n## AI Code Governance\nSome governance content\n',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const antiPatterns = report.checks.find(
+      (c) => c.name === 'Anti-pattern rules',
+    );
+    expect(antiPatterns?.status).toBe('warn');
+  });
+
+  // policies.ts gaps
+
+  it('warns policy coverage when only 1 policy file is present', () => {
+    tempDir = createProject({
+      '.forge/policies/security.policy.json': '{"rules":[]}',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const coverage = report.checks.find(
+      (c) => c.name === 'Policy coverage',
+    );
+    expect(coverage?.status).toBe('warn');
+  });
+
+  it('fails policy coverage when policy file has no matching type name', () => {
+    tempDir = createProject({
+      '.forge/policies/custom.policy.json': '{"rules":[]}',
+    });
+
+    const report = runAudit(tempDir, makeStack());
+
+    const coverage = report.checks.find(
+      (c) => c.name === 'Policy coverage',
+    );
+    expect(coverage?.status).toBe('fail');
+  });
+
+  // quality.ts gaps
+
+  it('shows linter configured without parens when lintCommand is undefined', () => {
+    tempDir = createProject({
+      'package.json': '{}',
+    });
+
+    const report = runAudit(
+      tempDir,
+      makeStack({ lintCommand: undefined }),
+    );
+
+    const lintCheck = report.checks.find(
+      (c) => c.name === 'Linting',
+    );
+    expect(lintCheck?.status).toBe('pass');
+    expect(lintCheck?.detail).toBe('Linter configured');
+  });
+
+  it('warns formatting when stack.hasFormatting is false', () => {
+    tempDir = createProject({
+      'package.json': '{}',
+    });
+
+    const report = runAudit(
+      tempDir,
+      makeStack({ hasFormatting: false }),
+    );
+
+    const formatCheck = report.checks.find(
+      (c) => c.name === 'Formatting',
+    );
+    expect(formatCheck?.status).toBe('warn');
+  });
 });

@@ -2,6 +2,11 @@ import {
   generateMigrationFiles,
   generateMigrationRoadmap,
 } from '../../src/generators/migration.js';
+import {
+  detectStrategy,
+  strategyDescription,
+  strategyRationale,
+} from '../../src/generators/migration/strategy.js';
 import type { DetectedStack } from '../../src/types.js';
 
 const baseStack: DetectedStack = {
@@ -108,5 +113,85 @@ describe('generateMigrationFiles', () => {
     expect(adr!.content).toContain('40%');
     expect(adr!.content).toContain('60%');
     expect(adr!.content).toContain('80%');
+  });
+
+  it('ADR reflects hasCi configured when CI is present', () => {
+    const stack: DetectedStack = { ...baseStack, hasCi: true };
+    const files = generateMigrationFiles(stack, 'standard');
+    const adr = files.find((f) => f.path.includes('ADR-0001'));
+
+    expect(adr!.content).toContain('CI/CD: configured');
+  });
+
+  it('MIGRATION.md reflects hasCi yes when CI is present', () => {
+    const stack: DetectedStack = { ...baseStack, hasCi: true };
+    const content = generateMigrationRoadmap(stack);
+
+    expect(content).toContain('Has CI: Yes');
+  });
+});
+
+describe('detectStrategy', () => {
+  it('returns strangler-fig for fastapi', () => {
+    expect(detectStrategy({ ...baseStack, framework: 'fastapi' })).toBe('strangler-fig');
+  });
+
+  it('returns strangler-fig for django', () => {
+    expect(detectStrategy({ ...baseStack, framework: 'django' })).toBe('strangler-fig');
+  });
+
+  it('returns strangler-fig for flask', () => {
+    expect(detectStrategy({ ...baseStack, framework: 'flask' })).toBe('strangler-fig');
+  });
+
+  it('returns branch-by-abstraction for vue', () => {
+    expect(detectStrategy({ ...baseStack, framework: 'vue' })).toBe('branch-by-abstraction');
+  });
+
+  it('returns branch-by-abstraction for nextjs', () => {
+    expect(detectStrategy({ ...baseStack, framework: 'nextjs' })).toBe('branch-by-abstraction');
+  });
+
+  it('returns strangler-fig as default for unknown framework', () => {
+    expect(detectStrategy({ ...baseStack })).toBe('strangler-fig');
+  });
+});
+
+describe('strategyDescription', () => {
+  it('returns description for lift-and-shift', () => {
+    const desc = strategyDescription('lift-and-shift');
+    expect(desc).toContain('Move to new infrastructure first');
+  });
+});
+
+describe('strategyRationale', () => {
+  it('returns rationale for branch-by-abstraction with framework', () => {
+    const stack: DetectedStack = { ...baseStack, framework: 'react' };
+    const rationale = strategyRationale('branch-by-abstraction', stack);
+    expect(rationale).toContain('react');
+    expect(rationale).toContain('abstraction');
+  });
+
+  it('returns rationale for branch-by-abstraction falls back to language when no framework', () => {
+    const rationale = strategyRationale('branch-by-abstraction', baseStack);
+    expect(rationale).toContain('typescript');
+  });
+
+  it('returns rationale for parallel-run', () => {
+    const stack: DetectedStack = { ...baseStack, language: 'java' };
+    const rationale = strategyRationale('parallel-run', stack);
+    expect(rationale).toContain('java');
+    expect(rationale).toContain('simultaneously');
+  });
+
+  it('returns rationale for lift-and-shift', () => {
+    const rationale = strategyRationale('lift-and-shift', baseStack);
+    expect(rationale).toContain('typescript');
+    expect(rationale).toContain('infrastructure');
+  });
+
+  it('returns rationale for strangler-fig falls back to language when no framework', () => {
+    const rationale = strategyRationale('strangler-fig', baseStack);
+    expect(rationale).toContain('typescript');
   });
 });

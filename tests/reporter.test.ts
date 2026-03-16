@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { ScanReport } from '../src/scanner.js';
 import { formatReport, writeReport } from '../src/reporter.js';
+import { gradeIcon, severityIcon, getVersion } from '../src/reporter/helpers.js';
 
 function makeTempDir(): string {
   const dir = join(tmpdir(), `forge-rpt-${Date.now()}`);
@@ -265,5 +266,170 @@ describe('writeReport', () => {
     const content = readFileSync(outPath, 'utf-8');
     const sarif = JSON.parse(content);
     expect(sarif.version).toBe('2.1.0');
+  });
+});
+
+describe('gradeIcon', () => {
+  it('returns correct icons for all grades', () => {
+    expect(gradeIcon('A')).toBe('🟢');
+    expect(gradeIcon('B')).toBe('🔵');
+    expect(gradeIcon('C')).toBe('🟡');
+    expect(gradeIcon('D')).toBe('🟠');
+    expect(gradeIcon('F')).toBe('🔴');
+    expect(gradeIcon('X')).toBe('🔴');
+  });
+});
+
+describe('severityIcon', () => {
+  it('returns correct icons for all severities', () => {
+    expect(severityIcon('critical')).toBe('🔴');
+    expect(severityIcon('high')).toBe('🟠');
+    expect(severityIcon('medium')).toBe('🟡');
+    expect(severityIcon('low')).toBe('🔵');
+    expect(severityIcon('info')).toBe('🔵');
+  });
+});
+
+describe('getVersion', () => {
+  it('returns a semver string', () => {
+    expect(getVersion()).toMatch(/^\d+\.\d+\.\d+/);
+  });
+});
+
+describe('formatReport — markdown edge cases', () => {
+  it('shows clean category strengths when some categories have no issues', () => {
+    const report = makeReport({
+      findings: [
+        {
+          rule: 'empty-catch',
+          severity: 'high',
+          category: 'error-handling',
+          message: 'Empty catch',
+          file: 'src/app.ts',
+          line: 1,
+        },
+      ],
+      summary: [
+        { category: 'error-handling', count: 1, critical: 0, high: 1 },
+        { category: 'security', count: 0, critical: 0, high: 0 },
+      ],
+    });
+    const md = formatReport(report, 'markdown');
+    expect(md).toContain('Strengths');
+    expect(md).toContain('Security');
+    expect(md).toContain('No issues found');
+  });
+
+  it('truncates improvements section when > 20 medium/low findings', () => {
+    const findings = Array.from({ length: 25 }, (_, i) => ({
+      rule: `rule-${i}`,
+      severity: 'medium' as const,
+      category: 'engineering' as const,
+      message: `Finding ${i}`,
+      file: `src/file${i}.ts`,
+      line: i + 1,
+    }));
+    const md = formatReport(makeReport({ findings }), 'markdown');
+    expect(md).toContain('more');
+  });
+
+  it('shows single critical recommendation with singular form', () => {
+    const report = makeReport({
+      findings: [
+        {
+          rule: 'sql-injection',
+          severity: 'critical',
+          category: 'security',
+          message: 'SQL injection',
+          file: 'src/db.ts',
+          line: 10,
+        },
+      ],
+    });
+    const md = formatReport(report, 'markdown');
+    expect(md).toContain('Fix 1 critical issue immediately');
+  });
+
+  it('shows single high recommendation with singular form', () => {
+    const report = makeReport({
+      findings: [
+        {
+          rule: 'empty-catch',
+          severity: 'high',
+          category: 'error-handling',
+          message: 'Empty catch',
+          file: 'src/app.ts',
+          line: 1,
+        },
+      ],
+    });
+    const md = formatReport(report, 'markdown');
+    expect(md).toContain('Address 1 high-priority finding');
+  });
+
+  it('does not show hot files section when topFiles is empty', () => {
+    const md = formatReport(makeReport({ topFiles: [] }), 'markdown');
+    expect(md).not.toContain('Hot Files');
+  });
+
+  it('does not show category breakdown when summary is empty', () => {
+    const md = formatReport(makeReport({ summary: [] }), 'markdown');
+    expect(md).not.toContain('Category Breakdown');
+  });
+
+  it('does not show category breakdown when all categories have 0 findings', () => {
+    const report = makeReport({
+      findings: [],
+      summary: [
+        { category: 'security', count: 0, critical: 0, high: 0 },
+      ],
+    });
+    const md = formatReport(report, 'markdown');
+    expect(md).not.toContain('Category Breakdown');
+  });
+
+  it('health icon is red for categories with critical findings', () => {
+    const report = makeReport({
+      findings: [
+        {
+          rule: 'sql-injection',
+          severity: 'critical',
+          category: 'security',
+          message: 'SQL injection',
+          file: 'src/db.ts',
+          line: 1,
+        },
+      ],
+      summary: [
+        { category: 'security', count: 1, critical: 1, high: 0 },
+      ],
+    });
+    const md = formatReport(report, 'markdown');
+    expect(md).toContain('🔴');
+  });
+
+  it('shows plural high recommendation when multiple high findings exist', () => {
+    const report = makeReport({
+      findings: [
+        {
+          rule: 'empty-catch',
+          severity: 'high',
+          category: 'error-handling',
+          message: 'Empty catch',
+          file: 'src/app.ts',
+          line: 1,
+        },
+        {
+          rule: 'no-error-handling',
+          severity: 'high',
+          category: 'error-handling',
+          message: 'No error handling',
+          file: 'src/lib.ts',
+          line: 5,
+        },
+      ],
+    });
+    const md = formatReport(report, 'markdown');
+    expect(md).toContain('Address 2 high-priority findings');
   });
 });
