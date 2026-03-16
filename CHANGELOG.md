@@ -4,6 +4,8 @@
 
 ## [0.29.0] - 2026-03-15
 
+## [0.29.0] - 2026-03-15
+
 ### Changed
 
 - **Split `src/rules/index.ts`** (925→22 lines) into 10 category sub-files (`security.ts`=45 rules, `engineering.ts`=27, `error-handling.ts`=14, `scalability.ts`=10, `type-safety.ts`=5, `async.ts`=4, `react.ts`=3, `architecture.ts`=3, `accessibility.ts`=3, `hardcoded-values.ts`=1). Total 115 rules preserved. `index.ts` now re-exports only.
