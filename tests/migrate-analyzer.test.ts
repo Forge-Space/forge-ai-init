@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, mkdtempSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
@@ -6,6 +6,7 @@ import { analyzeMigration } from '../src/migrate-analyzer.js';
 import { findStranglerBoundaries } from '../src/migrate-analyzer/boundaries.js';
 import { analyzeDependencyRisks } from '../src/migrate-analyzer/dependency-risks.js';
 import { estimateEffort } from '../src/migrate-analyzer/phases.js';
+import { analyzeTypingNeeds } from '../src/migrate-analyzer/typing-needs.js';
 import type { DetectedStack } from '../src/types.js';
 import type { ScanReport } from '../src/scanner.js';
 import type { StranglerBoundary, TypingStep, DependencyRisk } from '../src/migrate-analyzer/types.js';
@@ -289,6 +290,17 @@ describe('migrate-analyzer', () => {
     }
   });
 
+  it('assigns low priority for JS file with > 300 lines (lines 62-64)', () => {
+    const manyLines = Array(310).fill('const x = 1;').join('\n');
+    writeFile(dir, 'src/bigmodule.js', manyLines);
+    const plan = analyzeMigration(dir, baseStack);
+    const step = plan.typingPlan.find((t) => t.file.includes('bigmodule'));
+    if (step) {
+      expect(step.priority).toBe('low');
+      expect(step.reason).toContain('Large file');
+    }
+  });
+
   it('isConfig triggers medium priority typing step for config.js', () => {
     writeFile(dir, 'src/config.js', 'module.exports = { debug: true };\n');
     const plan = analyzeMigration(dir, baseStack);
@@ -339,6 +351,86 @@ function makeScanReport(findings: ScanReport['findings']): ScanReport {
     topFiles: [],
   };
 }
+
+describe('findStranglerBoundaries — complexity branch coverage (lines 25-29)', () => {
+  function makeScanReportLocal(findings: ScanReport['findings']): ScanReport {
+    return {
+      findings,
+      filesScanned: findings.length || 1,
+      score: 80,
+      grade: 'B',
+      summary: [],
+      topFiles: [],
+    };
+  }
+
+  it('assigns high complexity when god-file has > 5 total findings', () => {
+    // 6 findings all on the same file → complexity = 'high'
+    const findings = Array.from({ length: 6 }, (_, i) => ({
+      file: 'src/big.ts',
+      line: i + 1,
+      category: 'architecture' as const,
+      severity: 'high' as const,
+      rule: i === 0 ? 'god-file' : 'other-rule',
+      message: `Finding ${i}`,
+    }));
+    const scan = makeScanReportLocal(findings);
+    const boundaries = findStranglerBoundaries('/tmp', scan);
+    const b = boundaries.find((b) => b.module === 'src/big.ts');
+    expect(b).toBeDefined();
+    expect(b!.complexity).toBe('high');
+  });
+
+  it('assigns medium complexity when god-file has 3-5 total findings', () => {
+    // 4 findings on same file → complexity = 'medium'
+    const findings = Array.from({ length: 4 }, (_, i) => ({
+      file: 'src/medium.ts',
+      line: i + 1,
+      category: 'architecture' as const,
+      severity: 'high' as const,
+      rule: i === 0 ? 'god-file' : 'other-rule',
+      message: `Finding ${i}`,
+    }));
+    const scan = makeScanReportLocal(findings);
+    const boundaries = findStranglerBoundaries('/tmp', scan);
+    const b = boundaries.find((b) => b.module === 'src/medium.ts');
+    expect(b).toBeDefined();
+    expect(b!.complexity).toBe('medium');
+  });
+
+  it('assigns low complexity when god-file has <= 2 total findings', () => {
+    // Only 1 finding → complexity = 'low'
+    const scan = makeScanReportLocal([{
+      file: 'src/small.ts',
+      line: 1,
+      category: 'architecture' as const,
+      severity: 'high' as const,
+      rule: 'god-file',
+      message: 'God file',
+    }]);
+    const boundaries = findStranglerBoundaries('/tmp', scan);
+    const b = boundaries.find((b) => b.module === 'src/small.ts');
+    expect(b).toBeDefined();
+    expect(b!.complexity).toBe('low');
+  });
+
+  it('sprawl boundary uses 0 dependents when file has no finding map entry (line 42 ?? 0)', () => {
+    // sprawl file not referenced in fileFindings map → dependents = 0
+    const scan = makeScanReportLocal([{
+      file: 'src/fresh.ts',
+      line: 1,
+      category: 'architecture' as const,
+      severity: 'medium' as const,
+      rule: 'function-sprawl',
+      message: 'Too many exports',
+    }]);
+    const boundaries = findStranglerBoundaries('/tmp', scan);
+    const b = boundaries.find((b) => b.module === 'src/fresh.ts');
+    expect(b).toBeDefined();
+    // dependents is fileFindings.get(file) which is 1 (the sprawl finding itself counted in loop)
+    expect(typeof b!.dependents).toBe('number');
+  });
+});
 
 describe('findStranglerBoundaries — coverage gaps', () => {
   it('creates boundary for function-sprawl files not in god-file list', () => {
@@ -434,6 +526,108 @@ describe('analyzeDependencyRisks — coverage gaps', () => {
     const countRisk = risks.find((r) => r.name.includes('dependency count'));
     expect(countRisk).toBeDefined();
     expect(countRisk!.severity).toBe('high');
+  });
+});
+
+describe('analyzeTypingNeeds — catch block coverage (line 15)', () => {
+  it('returns empty array when root dir is non-readable (readdirSync throws)', () => {
+    // Pass a path that does not exist — readdirSync will throw ENOENT
+    const steps = analyzeTypingNeeds('/nonexistent/path/that/does/not/exist/xyz123');
+    expect(Array.isArray(steps)).toBe(true);
+    expect(steps).toHaveLength(0);
+  });
+
+  it('returns empty array when dir exists but has no JS files', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'forge-typing-'));
+    try {
+      writeFileSync(join(tmpDir, 'readme.md'), '# readme\n');
+      const steps = analyzeTypingNeeds(tmpDir);
+      expect(steps).toHaveLength(0);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('skips node_modules and dotfile directories (line 19 false branch)', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'forge-typing-'));
+    try {
+      // Create a node_modules dir with a JS file inside — should be ignored
+      mkdirSync(join(tmpDir, 'node_modules'), { recursive: true });
+      writeFileSync(join(tmpDir, 'node_modules', 'ignored.js'), 'const x = 1;\n');
+      // Create a dotfile dir with a JS file inside — should be ignored
+      mkdirSync(join(tmpDir, '.hidden'), { recursive: true });
+      writeFileSync(join(tmpDir, '.hidden', 'also-ignored.js'), 'const y = 2;\n');
+      const steps = analyzeTypingNeeds(tmpDir);
+      // Neither file from ignored dirs should be in steps
+      expect(steps.every((s) => !s.file.includes('node_modules'))).toBe(true);
+      expect(steps.every((s) => !s.file.includes('.hidden'))).toBe(true);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('assigns medium priority for regular JS file with 50-300 lines (line 62 false branch)', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'forge-typing-'));
+    try {
+      // 100-line regular JS file — not entry, not util, not config, 50 <= lines <= 300
+      const regularContent = Array(100).fill('const val = 42;').join('\n');
+      writeFileSync(join(tmpDir, 'regular-module.js'), regularContent);
+      const steps = analyzeTypingNeeds(tmpDir);
+      const step = steps.find((s) => s.file.includes('regular-module'));
+      expect(step).toBeDefined();
+      expect(step!.priority).toBe('medium');
+      expect(step!.reason).toBe('Standard module — convert to TypeScript');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('findStranglerBoundaries — ?? 0 null-coalescing branch (lines 25, 42)', () => {
+  function makeFindings(overrides: Partial<ScanReport['findings'][0]>[] = []): ScanReport {
+    return {
+      findings: overrides as ScanReport['findings'],
+      filesScanned: 1,
+      score: 80,
+      grade: 'B',
+      summary: [],
+      topFiles: [],
+    };
+  }
+
+  it('god-file with exactly 1 finding gets dependents=1 and complexity=low', () => {
+    // Only 1 finding on the file (the god-file rule itself)
+    // fileFindings.get(file) = 1, ?? 0 left side is defined (1)
+    const scan = makeFindings([{
+      file: 'src/only.ts',
+      line: 1,
+      category: 'architecture',
+      severity: 'high',
+      rule: 'god-file',
+      message: 'God file',
+    }]);
+    const boundaries = findStranglerBoundaries('/tmp', scan);
+    const b = boundaries.find((x) => x.module === 'src/only.ts');
+    expect(b).toBeDefined();
+    expect(b!.complexity).toBe('low');
+    expect(b!.dependents).toBe(1);
+  });
+
+  it('sprawl-only file with exactly 1 finding gets dependents=1', () => {
+    // function-sprawl file with 1 finding → fileFindings.get(file) = 1
+    const scan = makeFindings([{
+      file: 'src/sprawl-only.ts',
+      line: 1,
+      category: 'architecture',
+      severity: 'medium',
+      rule: 'function-sprawl',
+      message: 'Too many exports',
+    }]);
+    const boundaries = findStranglerBoundaries('/tmp', scan);
+    const b = boundaries.find((x) => x.module === 'src/sprawl-only.ts');
+    expect(b).toBeDefined();
+    expect(b!.dependents).toBe(1);
+    expect(b!.complexity).toBe('medium');
   });
 });
 

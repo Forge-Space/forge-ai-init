@@ -1,4 +1,5 @@
 import { generateWorkflows } from '../../src/generators/workflows.js';
+import { scorecardWorkflow } from '../../src/generators/workflows/github-enterprise.js';
 import type { DetectedStack } from '../../src/types.js';
 
 function makeStack(
@@ -192,6 +193,40 @@ describe('generateWorkflows', () => {
       expect(files[0]!.content).toContain('allow_failure: true');
     });
 
+    it('uses pnpm install for pnpm packageManager in GitLab CI (line 14)', () => {
+      const files = generateWorkflows(
+        makeStack({ ciProvider: 'gitlab-ci', packageManager: 'pnpm' }),
+        'standard',
+        'gitlab-ci',
+      );
+      expect(files[0]!.content).toContain('corepack enable && pnpm install --frozen-lockfile');
+    });
+
+    it('uses mypy for python typecheck stage in GitLab CI (line 25)', () => {
+      const files = generateWorkflows(
+        makeStack({
+          ciProvider: 'gitlab-ci',
+          language: 'python',
+          hasTypeChecking: true,
+          testCommand: 'pytest',
+          lintCommand: 'ruff check',
+        }),
+        'standard',
+        'gitlab-ci',
+      );
+      expect(files[0]!.content).toContain('mypy .');
+    });
+
+    it('includes test stage when testCommand is defined (line 51)', () => {
+      const files = generateWorkflows(
+        makeStack({ ciProvider: 'gitlab-ci', testCommand: 'npm test' }),
+        'standard',
+        'gitlab-ci',
+      );
+      expect(files[0]!.content).toContain('stage: test');
+      expect(files[0]!.content).toContain('npm test');
+    });
+
     it('uses yarn install for yarn packageManager in GitLab CI', () => {
       const files = generateWorkflows(
         makeStack({ ciProvider: 'gitlab-ci', packageManager: 'yarn' }),
@@ -227,6 +262,32 @@ describe('generateWorkflows', () => {
       const content = files[0]!.content;
       expect(content).not.toContain('stage: build');
     });
+
+    it('omits typecheck stage when hasTypeChecking is false (line 25 false branch)', () => {
+      const files = generateWorkflows(
+        makeStack({
+          ciProvider: 'gitlab-ci',
+          hasTypeChecking: false,
+        }),
+        'standard',
+        'gitlab-ci',
+      );
+      const content = files[0]!.content;
+      expect(content).not.toContain('stage: typecheck');
+    });
+
+    it('omits test stage when testCommand is undefined (line 51 false branch)', () => {
+      const files = generateWorkflows(
+        makeStack({
+          ciProvider: 'gitlab-ci',
+          testCommand: undefined,
+        }),
+        'standard',
+        'gitlab-ci',
+      );
+      const content = files[0]!.content;
+      expect(content).not.toContain('stage: test');
+    });
   });
 
   describe('yarn packageManager support', () => {
@@ -250,6 +311,37 @@ describe('generateWorkflows', () => {
       );
       expect(scorecard!.content).toContain('cache: yarn');
       expect(scorecard!.content).toContain('yarn install --frozen-lockfile');
+    });
+  });
+
+  describe('scorecardWorkflow — all setup branches (lines 5-14)', () => {
+    it('scorecard uses python setup for python enterprise projects (line 5)', () => {
+      const files = generateWorkflows(
+        makeStack({ language: 'python', packageManager: 'npm' }),
+        'enterprise',
+      );
+      const scorecard = files.find((f) =>
+        f.path.includes('scorecard.yml'),
+      );
+      expect(scorecard).toBeDefined();
+      expect(scorecard!.content).toContain('setup-python');
+      expect(scorecard!.content).toContain('pip install -r requirements.txt');
+    });
+
+    it('scorecard uses pnpm cache and install when packageManager is pnpm (lines 13-14)', () => {
+      const content = scorecardWorkflow(
+        makeStack({ language: 'typescript', packageManager: 'pnpm' }),
+      );
+      expect(content).toContain('cache: pnpm');
+      expect(content).toContain('pnpm install --frozen-lockfile');
+    });
+
+    it('scorecard uses npm ci when packageManager is npm (line 13-14 default branch)', () => {
+      const content = scorecardWorkflow(
+        makeStack({ language: 'typescript', packageManager: 'npm' }),
+      );
+      expect(content).toContain('cache: npm');
+      expect(content).toContain('npm ci');
     });
   });
 });

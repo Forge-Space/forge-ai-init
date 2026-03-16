@@ -125,6 +125,49 @@ describe('runDiffCommand', () => {
     expect(calls).toContain('80');
   });
 
+  it('shows truncation when more than 15 new findings (line 41)', () => {
+    const manyFindings = Array.from({ length: 18 }, (_, i) => ({
+      file: `src/file${i}.ts`,
+      rule: 'no-console',
+      severity: 'high',
+      message: `Avoid console ${i}`,
+    }));
+    mockAnalyzeDiff.mockReturnValue(makeDiffResult({
+      changedFiles: ['src/a.ts'],
+      newFindings: manyFindings,
+    }));
+    runDiffCommand('/tmp/proj');
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('more');
+  });
+
+  it('shows negative delta in red when delta < 0 (line 41)', () => {
+    mockAnalyzeDiff.mockReturnValue(makeDiffResult({
+      changedFiles: ['src/a.ts'],
+      beforeScore: 80,
+      afterScore: 75,
+      delta: -5,
+      improved: false,
+    }));
+    runDiffCommand('/tmp/proj');
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('80');
+    expect(calls).toContain('75');
+  });
+
+  it('shows zero delta when delta is 0 (line 41)', () => {
+    mockAnalyzeDiff.mockReturnValue(makeDiffResult({
+      changedFiles: ['src/a.ts'],
+      beforeScore: 80,
+      afterScore: 80,
+      delta: 0,
+      improved: false,
+    }));
+    runDiffCommand('/tmp/proj');
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('80');
+  });
+
   it('passes staged option', () => {
     runDiffCommand('/my/project', undefined, true);
     expect(mockAnalyzeDiff).toHaveBeenCalledWith('/my/project', expect.objectContaining({ staged: true }));

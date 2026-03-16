@@ -147,4 +147,30 @@ describe('runMigratePlanCommand', () => {
     const calls = consoleSpy.mock.calls.flat().join('');
     expect(calls).toContain('more files');
   });
+
+  it('shows medium complexity boundary with yellow color (lines 29-30)', () => {
+    mockAnalyzeMigration.mockReturnValue(makeMigrationPlan({
+      boundaries: [
+        { module: 'payments', type: 'service', complexity: 'medium', reason: 'Mid complexity', dependents: 2 },
+        { module: 'logging', type: 'ui', complexity: 'low', reason: 'Simple lib', dependents: 1 },
+      ],
+    }));
+    runMigratePlanCommand('/tmp/proj', makeStack(), false);
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('payments');
+    expect(calls).toContain('logging');
+  });
+
+  it('shows medium and low priority typing plan entries (line 51)', () => {
+    mockAnalyzeMigration.mockReturnValue(makeMigrationPlan({
+      typingPlan: [
+        { file: 'src/medium.js', priority: 'medium', reason: 'Used widely', estimatedLines: 80 },
+        { file: 'src/low.js', priority: 'low', reason: 'Rarely used', estimatedLines: 20 },
+      ],
+    }));
+    runMigratePlanCommand('/tmp/proj', makeStack(), false);
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('src/medium.js');
+    expect(calls).toContain('src/low.js');
+  });
 });

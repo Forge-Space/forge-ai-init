@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
@@ -11,6 +11,11 @@ import {
   detectTestFramework,
   detectCIProvider,
 } from '../src/detector/tooling.js';
+import {
+  collectWorkspaceDeps,
+  findFileRecursive,
+  hasKotlinSources,
+} from '../src/detector/utils.js';
 
 function createTempDir(): string {
   const dir = join(
@@ -644,6 +649,189 @@ describe('detectCIProvider — branch coverage', () => {
       writeFileSync(join(dir, 'Jenkinsfile'), 'pipeline {}');
       expect(detectCIProvider(dir)).toBe('jenkins');
     } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ─── detector/utils.ts branch coverage ───────────────────────────────────────
+
+describe('collectWorkspaceDeps — branch coverage', () => {
+  it('returns root deps and ignores unreadable workspace directory (catch line 41)', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ws-catch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    const unreadable = join(dir, 'packages');
+    mkdirSync(unreadable, { recursive: true });
+    try {
+      // Make the workspace dir unreadable so readdirSync throws
+      chmodSync(unreadable, 0o000);
+      const pkg = {
+        dependencies: { lodash: '4.x' },
+        workspaces: ['packages/*'],
+      };
+      const deps = collectWorkspaceDeps(dir, pkg);
+      // Root deps still returned even when workspace dir read fails
+      expect(deps['lodash']).toBe('4.x');
+    } finally {
+      chmodSync(unreadable, 0o755);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('skips files (non-directories) in workspace dir (line 31 false branch)', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ws-file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    const pkgsDir = join(dir, 'packages');
+    mkdirSync(pkgsDir, { recursive: true });
+    try {
+      // Put a plain file in the workspace dir — should be skipped (entry.isDirectory() false)
+      writeFileSync(join(pkgsDir, 'README.md'), '# readme');
+      const pkg = {
+        dependencies: { react: '18.x' },
+        workspaces: ['packages/*'],
+      };
+      const deps = collectWorkspaceDeps(dir, pkg);
+      // File entry skipped, root deps still returned
+      expect(deps['react']).toBe('18.x');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('skips workspace package without package.json (line 33 false branch)', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ws-nopkg-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    const pkgAppDir = join(dir, 'packages', 'app');
+    mkdirSync(pkgAppDir, { recursive: true });
+    try {
+      // 'app' is a directory but has no package.json → readJson returns null → skipped
+      const pkg = {
+        dependencies: { axios: '1.x' },
+        workspaces: ['packages/*'],
+      };
+      const deps = collectWorkspaceDeps(dir, pkg);
+      expect(deps['axios']).toBe('1.x');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('merges workspace package deps when package.json exists (line 34 Object.assign)', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ws-merge-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    const pkgAppDir = join(dir, 'packages', 'app');
+    mkdirSync(pkgAppDir, { recursive: true });
+    try {
+      writeFileSync(
+        join(pkgAppDir, 'package.json'),
+        JSON.stringify({ dependencies: { express: '4.x' }, devDependencies: { vitest: '1.x' } }),
+      );
+      const pkg = {
+        dependencies: { axios: '1.x' },
+        workspaces: ['packages/*'],
+      };
+      const deps = collectWorkspaceDeps(dir, pkg);
+      expect(deps['axios']).toBe('1.x');
+      expect(deps['express']).toBe('4.x');
+      expect(deps['vitest']).toBe('1.x');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('handles workspaces as object with packages key (line 23 object format)', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ws-obj-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    const pkgAppDir = join(dir, 'packages', 'app');
+    mkdirSync(pkgAppDir, { recursive: true });
+    try {
+      writeFileSync(
+        join(pkgAppDir, 'package.json'),
+        JSON.stringify({ dependencies: { lodash: '4.x' } }),
+      );
+      // workspaces as object with packages array (yarn classic format)
+      const pkg = {
+        dependencies: { axios: '1.x' },
+        workspaces: { packages: ['packages/*'] },
+      };
+      const deps = collectWorkspaceDeps(dir, pkg as never);
+      expect(deps['axios']).toBe('1.x');
+      expect(deps['lodash']).toBe('4.x');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('handles workspaces as object without packages key (line 23 ?? [] fallback)', () => {
+    const pkg = {
+      dependencies: { react: '18.x' },
+      workspaces: { nopkgs: [] },
+    };
+    const deps = collectWorkspaceDeps('/unused', pkg as never);
+    // no patterns to iterate, returns root deps unchanged
+    expect(deps['react']).toBe('18.x');
+  });
+});
+
+describe('findFileRecursive — catch branch and recursive true return (lines 65, 68)', () => {
+  it('returns false silently when readdirSync throws on the dir', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ffr-catch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    const unreadable = join(dir, 'sub');
+    mkdirSync(unreadable, { recursive: true });
+    try {
+      chmodSync(unreadable, 0o000);
+      // target file is not directly in sub, so it recurses into sub and throws
+      const found = findFileRecursive(unreadable, 'target.txt', 1);
+      expect(found).toBe(false);
+    } finally {
+      chmodSync(unreadable, 0o755);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns true when file is found in a nested subdirectory (line 65)', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ffr-nested-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(join(dir, 'sub', 'deep'), { recursive: true });
+    try {
+      writeFileSync(join(dir, 'sub', 'deep', 'target.txt'), '');
+      expect(findFileRecursive(dir, 'target.txt', 2)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('hasKotlinSources — catch branch (line 81)', () => {
+  it('returns false when src dir is unreadable', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-kotlin-catch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    const srcDir = join(dir, 'src');
+    mkdirSync(srcDir, { recursive: true });
+    try {
+      chmodSync(srcDir, 0o000);
+      expect(hasKotlinSources(dir)).toBe(false);
+    } finally {
+      chmodSync(srcDir, 0o755);
       rmSync(dir, { recursive: true, force: true });
     }
   });

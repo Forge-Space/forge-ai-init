@@ -48,6 +48,34 @@ describe('generateMcpConfig', () => {
     expect(typeof config).toBe('object');
   });
 
+  it('adds sequential-thinking for python projects (line 32)', () => {
+    const config = generateMcpConfig({ ...baseStack, language: 'python' });
+    expect(config['sequential-thinking']).toBeDefined();
+    expect(config['sequential-thinking'].args).toContain(
+      '@modelcontextprotocol/server-sequential-thinking',
+    );
+  });
+
+  it('does not add sequential-thinking for non-python projects', () => {
+    const config = generateMcpConfig(baseStack);
+    expect(config['sequential-thinking']).toBeUndefined();
+  });
+
+  it('adds playwright for sveltekit framework', () => {
+    const config = generateMcpConfig({ ...baseStack, framework: 'sveltekit' });
+    expect(config['playwright']).toBeDefined();
+  });
+
+  it('adds playwright for nuxt framework', () => {
+    const config = generateMcpConfig({ ...baseStack, framework: 'nuxt' });
+    expect(config['playwright']).toBeDefined();
+  });
+
+  it('adds playwright for astro framework', () => {
+    const config = generateMcpConfig({ ...baseStack, framework: 'astro' });
+    expect(config['playwright']).toBeDefined();
+  });
+
   it('returns valid server entries with command and args', () => {
     const config = generateMcpConfig(baseStack);
     for (const [, server] of Object.entries(config)) {

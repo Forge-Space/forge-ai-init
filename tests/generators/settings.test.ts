@@ -119,6 +119,39 @@ describe('generateSettings', () => {
     expect(commitHook).toBeUndefined();
   });
 
+  it('uses ruff format for python projects (line 43-44)', () => {
+    const pythonStack = { ...baseStack, language: 'python' as const };
+    const settings = generateSettings(pythonStack, 'lite') as {
+      hooks: {
+        PostToolUse: Array<{
+          matcher: string;
+          hooks: Array<{ command?: string }>;
+        }>;
+      };
+    };
+    const formatHook = settings.hooks.PostToolUse.find((h) =>
+      h.hooks.some((hook) => hook.command?.includes('ruff')),
+    );
+    expect(formatHook).toBeDefined();
+    expect(formatHook!.hooks[0]!.command).toContain('ruff format');
+  });
+
+  it('uses prettier for non-python projects (line 45)', () => {
+    const settings = generateSettings(baseStack, 'lite') as {
+      hooks: {
+        PostToolUse: Array<{
+          matcher: string;
+          hooks: Array<{ command?: string }>;
+        }>;
+      };
+    };
+    const formatHook = settings.hooks.PostToolUse.find((h) =>
+      h.hooks.some((hook) => hook.command?.includes('prettier')),
+    );
+    expect(formatHook).toBeDefined();
+    expect(formatHook!.hooks[0]!.command).toContain('prettier');
+  });
+
   it('includes secret protection hooks', () => {
     const settings = generateSettings(baseStack, 'lite') as {
       hooks: {
@@ -136,5 +169,18 @@ describe('generateSettings', () => {
         ),
     );
     expect(secretHook).toBeDefined();
+  });
+
+  it('preCommitHooks returns empty array for lite tier (line 88)', () => {
+    const settings = generateSettings(baseStack, 'lite') as {
+      hooks: { PreToolUse: Array<{ matcher: string }> };
+    };
+    // lite tier: no git commit hook in PreToolUse
+    const commitHook = settings.hooks.PreToolUse.find(h =>
+      h.matcher.includes('git commit'),
+    );
+    expect(commitHook).toBeUndefined();
+    // Verify lite tier still has the safety and secret hooks
+    expect(settings.hooks.PreToolUse.length).toBeGreaterThan(0);
   });
 });

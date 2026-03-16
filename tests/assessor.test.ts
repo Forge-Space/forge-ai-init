@@ -289,6 +289,64 @@ describe('assessProject', () => {
     });
   });
 
+  describe('dependency collector — medium many-dependencies branch (line 48)', () => {
+    it('flags many dependencies when depCount is 31-50 (medium severity)', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      writeFile(dir, 'package-lock.json', '{}');
+      const deps: Record<string, string> = {};
+      for (let i = 0; i < 35; i++) deps[`dep-${i}`] = '^1.0.0';
+      writeFile(dir, 'package.json', JSON.stringify({
+        dependencies: deps,
+        devDependencies: { jest: '^29' },
+        engines: { node: '>=18' },
+      }));
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+      const report = assessProject(dir, makeStack());
+      const manyDeps = report.findings.find((f) => f.title === 'Many dependencies');
+      expect(manyDeps).toBeDefined();
+      expect(manyDeps!.severity).toBe('medium');
+    });
+  });
+
+  describe('quality collector — uncovered branches', () => {
+    it('medium test coverage when ratio is 0.1-0.3 (line 46)', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      // 5 source files, 1 test file → ratio = 1/4 = 0.25 (between 0.1 and 0.3)
+      for (let i = 0; i < 4; i++) {
+        writeFile(dir, `src/module${i}.ts`, `export const m${i} = ${i};\n`);
+      }
+      writeFile(dir, 'src/__tests__/one.test.ts', 'test("x", () => {});\n');
+      const report = assessProject(dir, makeStack());
+      const lowCov = report.findings.find((f) => f.title === 'Low test coverage');
+      expect(lowCov).toBeDefined();
+      expect(lowCov!.severity).toBe('medium');
+    });
+
+    it('high severity empty catches when emptyCount > 5 (line 98)', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      const catches = Array(7).fill(0).map((_, i) =>
+        `try { fn${i}(); } catch (e) {}`,
+      ).join('\n');
+      writeFile(dir, 'src/catches.ts', catches);
+      const report = assessProject(dir, makeStack());
+      const emptyCatch = report.findings.find((f) => f.title === 'Empty catch blocks');
+      expect(emptyCatch).toBeDefined();
+      expect(emptyCatch!.severity).toBe('high');
+    });
+
+    it('flags high TODO/FIXME count when todoCount > 10 (line 122)', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      const todos = Array(12).fill(0).map((_, i) =>
+        `// TODO: fix this thing ${i}`,
+      ).join('\n');
+      writeFile(dir, 'src/todos.ts', todos);
+      const report = assessProject(dir, makeStack());
+      const todoFinding = report.findings.find((f) => f.title === 'High TODO/FIXME count');
+      expect(todoFinding).toBeDefined();
+      expect(todoFinding!.severity).toBe('medium');
+    });
+  });
+
   describe('migration readiness collector', () => {
     it('flags legacy stacks (jQuery)', () => {
       writeFile(dir, '.gitignore', '.env\n');
@@ -344,6 +402,20 @@ describe('assessProject', () => {
       expect(gs!.severity).toBe('high');
     });
 
+    it('flags global state usage (medium) when 1-5 globals (lines 87/105)', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      // 3 global assignments → medium severity (> 0 and <= 5)
+      writeFile(dir, 'src/globals.js', [
+        'window.myVar1 = "a";',
+        'window.myVar2 = "b";',
+        'window.myVar3 = "c";',
+      ].join('\n'));
+      const report = assessProject(dir, makeStack());
+      const gs = report.findings.find((f) => f.title === 'Global state usage');
+      expect(gs).toBeDefined();
+      expect(gs!.severity).toBe('medium');
+    });
+
     it('flags JS without TypeScript', () => {
       writeFile(dir, '.gitignore', '.env\n');
       writeFile(dir, 'src/index.js', 'var x = 1;\n');
@@ -353,6 +425,153 @@ describe('assessProject', () => {
       expect(report.findings.find(
         (f) => f.title === 'JavaScript without TypeScript',
       )).toBeDefined();
+    });
+  });
+
+  describe('dependency collector — no devDependencies branch (line 112)', () => {
+    it('flags no devDependencies when all deps are production and count > 0', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      writeFile(dir, 'package-lock.json', '{}');
+      writeFile(dir, 'package.json', JSON.stringify({
+        dependencies: { express: '^4', lodash: '^4' },
+        devDependencies: {},
+        engines: { node: '>=18' },
+      }));
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+      const report = assessProject(dir, makeStack());
+      const noDevDeps = report.findings.find((f) => f.title === 'No devDependencies');
+      expect(noDevDeps).toBeDefined();
+      expect(noDevDeps!.severity).toBe('medium');
+    });
+  });
+
+  describe('quality collector — no formatter branch (line 74)', () => {
+    it('flags no code formatter when hasFormatting is false', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+      const report = assessProject(dir, makeStack({ hasFormatting: false }));
+      const noFormatter = report.findings.find((f) => f.title === 'No code formatter');
+      expect(noFormatter).toBeDefined();
+      expect(noFormatter!.severity).toBe('medium');
+    });
+  });
+
+  describe('quality collector — no type checking branch (line 64)', () => {
+    it('flags no type checking when hasTypeChecking is false', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+      const report = assessProject(dir, makeStack({ hasTypeChecking: false }));
+      const noType = report.findings.find((f) => f.title === 'No type checking');
+      expect(noType).toBeDefined();
+      expect(noType!.severity).toBe('high');
+    });
+  });
+
+  describe('migration readiness — catch block for unreadable files (line 87)', () => {
+    it('skips unreadable files without throwing during global state scan', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      writeFile(dir, 'src/index.ts', 'window.globalA = 1;\n');
+
+      // Create an unreadable file
+      const unreadablePath = join(dir, 'src/unreadable.ts');
+      writeFile(dir, 'src/unreadable.ts', 'window.x = 1;\n');
+      chmodSync(unreadablePath, 0o000);
+
+      let report: ReturnType<typeof assessProject>;
+      try {
+        report = assessProject(dir, makeStack({ language: 'javascript' }));
+      } finally {
+        chmodSync(unreadablePath, 0o644);
+      }
+
+      // Should not throw; unreadable file is skipped gracefully
+      expect(Array.isArray(report!.findings)).toBe(true);
+    });
+  });
+
+  describe('dependency collector — high severity legacy packages (line 70)', () => {
+    it('flags angular as high severity legacy dependency', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      writeFile(dir, 'package-lock.json', '{}');
+      writeFile(dir, 'package.json', JSON.stringify({
+        dependencies: { angular: '^1.8.0' },
+        devDependencies: { jest: '^29' },
+        engines: { node: '>=18' },
+      }));
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+      const report = assessProject(dir, makeStack());
+      const angularFinding = report.findings.find(
+        (f) => f.category === 'dependencies' && f.title.includes('angular'),
+      );
+      expect(angularFinding).toBeDefined();
+      expect(angularFinding!.severity).toBe('high');
+    });
+
+    it('flags backbone as high severity legacy dependency', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      writeFile(dir, 'package-lock.json', '{}');
+      writeFile(dir, 'package.json', JSON.stringify({
+        dependencies: { backbone: '^1.4.0' },
+        devDependencies: { jest: '^29' },
+        engines: { node: '>=18' },
+      }));
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+      const report = assessProject(dir, makeStack());
+      const backboneFinding = report.findings.find(
+        (f) => f.category === 'dependencies' && f.title.includes('backbone'),
+      );
+      expect(backboneFinding).toBeDefined();
+      expect(backboneFinding!.severity).toBe('high');
+    });
+  });
+
+  describe('dependency collector — package.json without dependencies key (lines 31-34)', () => {
+    it('handles package.json with no dependencies or devDependencies keys', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      writeFile(dir, 'package-lock.json', '{}');
+      // package.json without "dependencies" or "devDependencies" keys
+      writeFile(dir, 'package.json', JSON.stringify({
+        name: 'my-app',
+        version: '1.0.0',
+        engines: { node: '>=18' },
+      }));
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+      // Should not throw; deps defaults to {} via ?? operator
+      const report = assessProject(dir, makeStack());
+      expect(Array.isArray(report.findings)).toBe(true);
+      // depCount = 0, devDepCount = 0 → no devDependencies finding (condition: devDepCount === 0 && depCount > 0)
+      expect(report.findings.find((f) => f.title === 'No devDependencies')).toBeUndefined();
+    });
+  });
+
+  describe('migration collector — package.json without dependencies key (lines 26-27)', () => {
+    it('handles package.json with no dependencies key in migration check', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      writeFile(dir, 'package-lock.json', '{}');
+      // package.json without "dependencies" key — allDeps uses ?? {} fallback
+      writeFile(dir, 'package.json', JSON.stringify({
+        name: 'my-app',
+        version: '1.0.0',
+        engines: { node: '>=18' },
+      }));
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+      const report = assessProject(dir, makeStack());
+      // No legacy stack findings should appear since deps is empty
+      const legacyFindings = report.findings.filter(
+        (f) => f.category === 'migration-readiness' && f.title.startsWith('Legacy stack'),
+      );
+      expect(legacyFindings).toHaveLength(0);
+    });
+  });
+
+  describe('quality collector — zero sourceFiles branch (line 36)', () => {
+    it('handles project with only test files and no source files (sourceFiles=0 → testRatio=0)', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      // Only a test file, no non-test source files → sourceFiles = 0 → testRatio = 0 branch
+      writeFile(dir, 'src/__tests__/only.test.ts', 'test("x", () => {});\n');
+      const report = assessProject(dir, makeStack());
+      // Should not throw; testRatio = 0 handled gracefully (no "Very low test coverage" since ratio = 0 / 0 = 0 fallback)
+      expect(Array.isArray(report.findings)).toBe(true);
     });
   });
 });

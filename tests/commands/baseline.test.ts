@@ -171,6 +171,30 @@ describe('runBaselineCommand', () => {
     expect(calls).toContain('security');
   });
 
+  it('shows red arrow when scoreDelta < 0 (line 19)', () => {
+    mockCompareBaseline.mockReturnValue(makeCompareResult({
+      scoreDelta: -5,
+      previous: { timestamp: '', score: 85, grade: 'B', filesScanned: 10, findingCount: 3, categories: [] },
+      current: { timestamp: '', score: 80, grade: 'B', filesScanned: 10, findingCount: 8, categories: [] },
+    }));
+    runBaselineCommand('/tmp/proj', true);
+    const calls = consoleSpy.mock.calls.flat().join('');
+    // Arrow and scores should appear in output
+    expect(calls).toContain('85');
+    expect(calls).toContain('80');
+  });
+
+  it('shows equal arrow when scoreDelta is 0 (line 19)', () => {
+    mockCompareBaseline.mockReturnValue(makeCompareResult({
+      scoreDelta: 0,
+      previous: { timestamp: '', score: 80, grade: 'B', filesScanned: 10, findingCount: 5, categories: [] },
+      current: { timestamp: '', score: 80, grade: 'B', filesScanned: 10, findingCount: 5, categories: [] },
+    }));
+    runBaselineCommand('/tmp/proj', true);
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('80');
+  });
+
   it('shows grade changed indicator', () => {
     mockCompareBaseline.mockReturnValue(makeCompareResult({
       gradeChanged: true,

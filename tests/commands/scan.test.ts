@@ -221,6 +221,68 @@ describe('runScanCommand', () => {
   });
 });
 
+describe('runScanCommand — additional coverage', () => {
+  let consoleSpy: ReturnType<typeof jest.spyOn>;
+
+  beforeEach(() => {
+    consoleSpy = jest.spyOn(console, 'log').mockImplementation(jest.fn() as never);
+    jest.spyOn(console, 'error').mockImplementation(jest.fn() as never);
+    mockScanProject.mockReset();
+    mockScanSpecificFiles.mockReset();
+    mockFormatReport.mockReset();
+    mockWriteReport.mockReset();
+    mockScanProject.mockReturnValue(makeScanReport());
+    mockScanSpecificFiles.mockReturnValue(makeScanReport());
+    mockFormatReport.mockReturnValue('formatted report');
+  });
+
+  afterEach(() => {
+    consoleSpy.mockRestore();
+    jest.restoreAllMocks();
+  });
+
+  it('shows staged label in output when staged=true (line 140)', () => {
+    mockScanSpecificFiles.mockReturnValue(makeScanReport());
+    mockExecFileSync.mockReturnValue('src/foo.ts\n');
+    runScanCommand('/tmp/proj', false, true);
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('staged');
+  });
+
+  it('outputs JSON for staged scan when asJson=true (line 131)', () => {
+    mockScanSpecificFiles.mockReturnValue(makeScanReport());
+    mockExecFileSync.mockReturnValue('src/foo.ts\n');
+    runScanCommand('/tmp/proj', true, true);
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('"grade"');
+  });
+
+  it('writes report with default json format when format omitted but outputPath given (line 114-126)', () => {
+    runScanCommand('/tmp/proj', false, false, '/tmp/report.json', undefined);
+    expect(mockWriteReport).toHaveBeenCalledWith(
+      expect.anything(),
+      'json',
+      '/tmp/report.json',
+    );
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('Report written');
+  });
+
+  it('watcher shows high findings count label when high > 0 (scan.ts line 88)', () => {
+    mockScanProject.mockReturnValue(makeScanReport({
+      score: 75,
+      grade: 'B',
+      findings: [
+        { file: 'src/a.ts', line: 1, severity: 'high', rule: 'no-console', message: 'msg', category: 'engineering' },
+        { file: 'src/b.ts', line: 2, severity: 'high', rule: 'no-console', message: 'msg2', category: 'engineering' },
+      ],
+    }));
+    runWatchCommand('/tmp/proj');
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('high');
+  });
+});
+
 describe('runUpdateCommand', () => {
   let consoleSpy: ReturnType<typeof jest.spyOn>;
 
@@ -236,6 +298,7 @@ describe('runUpdateCommand', () => {
       migrate: false,
     });
   });
+
 
   afterEach(() => {
     consoleSpy.mockRestore();
@@ -306,6 +369,16 @@ describe('runUpdateCommand', () => {
     runUpdateCommand('/tmp/proj', makeStack(), {});
     const calls = consoleSpy.mock.calls.flat().join('');
     expect(calls).toContain('Unchanged');
+  });
+
+  it('passes tierOverride and toolsOverride when opts contain them (lines 30-31)', () => {
+    runUpdateCommand('/tmp/proj', makeStack(), { tier: 'enterprise', tools: 'claude,cursor' });
+    expect(mockUpdateProject).toHaveBeenCalledWith(
+      '/tmp/proj',
+      expect.anything(),
+      'enterprise',
+      expect.arrayContaining(['claude', 'cursor']),
+    );
   });
 
   it('shows singular file updated when total is 1', () => {
@@ -478,5 +551,31 @@ describe('runWatchCommand', () => {
     runWatchCommand('/tmp/proj');
     const calls = consoleSpy.mock.calls.flat().join('');
     expect(calls).toContain('more');
+  });
+
+  it('runScan shows singular "finding" when exactly 1 finding (scan.ts line 88)', () => {
+    mockScanProject.mockReturnValue(makeScanReport({
+      findings: [
+        { file: 'src/a.ts', line: 1, severity: 'high', rule: 'r1', message: 'msg1', category: 'engineering' },
+      ],
+    }));
+    runWatchCommand('/tmp/proj');
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('1 finding');
+    expect(calls).not.toContain('1 findings');
+  });
+
+  it('clears existing debounce when second file change arrives (scan.ts line 114)', () => {
+    jest.useFakeTimers();
+    runWatchCommand('/tmp/proj');
+    const initialCallCount = (mockScanProject as jest.Mock).mock.calls.length;
+    // First change — sets debounce
+    watcherCallback('change', 'src/foo.ts');
+    // Second change before timer fires — clears the old debounce and sets a new one
+    watcherCallback('change', 'src/bar.ts');
+    jest.runAllTimers();
+    // Debounce collapses both events into 1 additional scan
+    expect((mockScanProject as jest.Mock).mock.calls.length).toBe(initialCallCount + 1);
+    jest.useRealTimers();
   });
 });
