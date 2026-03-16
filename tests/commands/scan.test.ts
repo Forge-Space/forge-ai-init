@@ -7,6 +7,22 @@ const mockScanSpecificFiles = jest.fn();
 const mockFormatReport = jest.fn();
 const mockWriteReport = jest.fn();
 const mockUpdateProject = jest.fn();
+const mockExecFileSync = jest.fn();
+const mockWatch = jest.fn();
+
+jest.unstable_mockModule('node:child_process', () => ({
+  execFileSync: mockExecFileSync,
+}));
+
+jest.unstable_mockModule('node:fs', () => {
+  const { createRequire } = jest.requireActual('node:module') as typeof import('node:module');
+  const req = createRequire(import.meta.url);
+  const realFs = req('node:fs') as typeof import('node:fs');
+  return {
+    ...realFs,
+    watch: mockWatch,
+  };
+});
 
 jest.unstable_mockModule('../../src/scanner.js', () => ({
   scanProject: mockScanProject,
@@ -34,11 +50,15 @@ let runUpdateCommand: (
   stack: DetectedStack,
   opts: Record<string, string | boolean>,
 ) => void;
+let getStagedFiles: (dir: string) => string[];
+let runWatchCommand: (projectDir: string) => void;
 
 beforeAll(async () => {
   const mod = await import('../../src/commands/scan.js');
   runScanCommand = mod.runScanCommand;
   runUpdateCommand = mod.runUpdateCommand as typeof runUpdateCommand;
+  getStagedFiles = mod.getStagedFiles;
+  runWatchCommand = mod.runWatchCommand;
 });
 
 function makeStack(overrides: Partial<DetectedStack> = {}): DetectedStack {
@@ -314,5 +334,121 @@ describe('runUpdateCommand', () => {
     runUpdateCommand('/tmp/proj', makeStack(), {});
     const calls = consoleSpy.mock.calls.flat().join('');
     expect(calls).toContain('2 files updated');
+  });
+});
+
+describe('getStagedFiles', () => {
+  beforeEach(() => {
+    mockExecFileSync.mockReset();
+    jest.spyOn(console, 'error').mockImplementation(jest.fn() as never);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('returns array of trimmed filenames from git output', () => {
+    mockExecFileSync.mockReturnValue('src/foo.ts\nsrc/bar.ts\n');
+    const result = getStagedFiles('/tmp/proj');
+    expect(result).toEqual(['src/foo.ts', 'src/bar.ts']);
+  });
+
+  it('filters empty lines from git output', () => {
+    mockExecFileSync.mockReturnValue('src/foo.ts\n\nsrc/bar.ts\n\n');
+    const result = getStagedFiles('/tmp/proj');
+    expect(result).toEqual(['src/foo.ts', 'src/bar.ts']);
+  });
+
+  it('trims whitespace from filenames', () => {
+    mockExecFileSync.mockReturnValue('  src/foo.ts  \n  src/bar.ts  \n');
+    const result = getStagedFiles('/tmp/proj');
+    expect(result).toEqual(['src/foo.ts', 'src/bar.ts']);
+  });
+
+  it('calls process.exit(1) when execFileSync throws', () => {
+    mockExecFileSync.mockImplementation(() => { throw new Error('not a git repo'); });
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation(jest.fn() as never);
+    getStagedFiles('/tmp/not-a-repo');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+});
+
+describe('runWatchCommand', () => {
+  let consoleSpy: ReturnType<typeof jest.spyOn>;
+  let watcherCallback: (event: string, filename: string | null) => void;
+
+  beforeEach(() => {
+    consoleSpy = jest.spyOn(console, 'log').mockImplementation(jest.fn() as never);
+    jest.spyOn(console, 'error').mockImplementation(jest.fn() as never);
+    mockScanProject.mockReset();
+    mockWatch.mockReset();
+    mockScanProject.mockReturnValue(makeScanReport());
+    mockWatch.mockImplementation((_dir: unknown, _opts: unknown, cb: unknown) => {
+      watcherCallback = cb as (event: string, filename: string | null) => void;
+      return { close: jest.fn() };
+    });
+  });
+
+  afterEach(() => {
+    consoleSpy.mockRestore();
+    jest.restoreAllMocks();
+  });
+
+  it('logs header lines on start', () => {
+    runWatchCommand('/tmp/proj');
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('watch');
+    expect(calls).toContain('/tmp/proj');
+  });
+
+  it('calls scanProject immediately on start', () => {
+    runWatchCommand('/tmp/proj');
+    expect(mockScanProject).toHaveBeenCalledWith('/tmp/proj');
+  });
+
+  it('sets up fs.watch watcher', () => {
+    runWatchCommand('/tmp/proj');
+    expect(mockWatch).toHaveBeenCalledTimes(1);
+    expect(mockWatch).toHaveBeenCalledWith('/tmp/proj', { recursive: true }, expect.any(Function));
+  });
+
+  it('watcher callback with valid TS file triggers debounced scan', () => {
+    jest.useFakeTimers();
+    runWatchCommand('/tmp/proj');
+    const initialCallCount = (mockScanProject as jest.Mock).mock.calls.length;
+    watcherCallback('change', 'src/foo.ts');
+    jest.runAllTimers();
+    expect((mockScanProject as jest.Mock).mock.calls.length).toBe(initialCallCount + 1);
+    jest.useRealTimers();
+  });
+
+  it('watcher callback with non-code file is ignored', () => {
+    jest.useFakeTimers();
+    runWatchCommand('/tmp/proj');
+    const initialCallCount = (mockScanProject as jest.Mock).mock.calls.length;
+    watcherCallback('change', 'README.md');
+    jest.runAllTimers();
+    expect((mockScanProject as jest.Mock).mock.calls.length).toBe(initialCallCount);
+    jest.useRealTimers();
+  });
+
+  it('watcher callback with node_modules file is ignored', () => {
+    jest.useFakeTimers();
+    runWatchCommand('/tmp/proj');
+    const initialCallCount = (mockScanProject as jest.Mock).mock.calls.length;
+    watcherCallback('change', 'node_modules/some-pkg/index.ts');
+    jest.runAllTimers();
+    expect((mockScanProject as jest.Mock).mock.calls.length).toBe(initialCallCount);
+    jest.useRealTimers();
+  });
+
+  it('watcher callback with null filename is ignored', () => {
+    jest.useFakeTimers();
+    runWatchCommand('/tmp/proj');
+    const initialCallCount = (mockScanProject as jest.Mock).mock.calls.length;
+    watcherCallback('change', null);
+    jest.runAllTimers();
+    expect((mockScanProject as jest.Mock).mock.calls.length).toBe(initialCallCount);
+    jest.useRealTimers();
   });
 });

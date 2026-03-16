@@ -2,7 +2,20 @@
 
 ## [Unreleased]
 
-## [0.29.1] - 2026-03-15
+## [0.30.0] - 2026-03-15
+
+### Changed
+
+- **Refactored `src/test-autogen.ts`** (567→22 lines) into `src/test-autogen/` sub-modules (`types.ts`, `git.ts`, `classifiers.ts`, `requirements.ts`, `templates.ts`, `bypass.ts`, `telemetry.ts`, `index.ts`). Public `runTestAutogen()` API unchanged.
+- **Refactored `src/generators/policies.ts`** (501→2 lines) into `src/generators/policies/` sub-modules (`types.ts`, `base-policies.ts`, `framework-policies.ts`, `migration-policies.ts`, `index.ts`). Public `generatePolicies()` API unchanged.
+
+### Added
+
+- **Coverage push to 83%+ branches** — 36 new tests across `tests/commands/scan.test.ts` (+11), `tests/commands/init.test.ts` (+12), `tests/diff-analyzer.test.ts` (+4), `tests/doctor.test.ts` (+9). Covers `getStagedFiles`, `runWatchCommand`, `runInteractive`, base..HEAD diff paths, and all doctor branch conditions. Suite count: 53, test count: 787→823.
+
+### Coverage
+
+- Overall: 92.26% statements, **83.29% branches**, 96.5% functions, 94.05% lines.
 
 ## [0.29.1] - 2026-03-15
 

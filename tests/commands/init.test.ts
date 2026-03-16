@@ -44,11 +44,19 @@ let runNonInteractive: (
   migrate: boolean,
 ) => void;
 
+let runInteractive: (
+  projectDir: string,
+  stack: DetectedStack,
+  force: boolean,
+  dryRun: boolean,
+) => Promise<void>;
+
 beforeAll(async () => {
   mockSpinner.mockReturnValue({ start: mockSpinnerStart, stop: mockSpinnerStop });
   mockIsCancel.mockReturnValue(false);
   const mod = await import('../../src/commands/init.js');
   runNonInteractive = mod.runNonInteractive;
+  runInteractive = mod.runInteractive;
 });
 
 function makeStack(overrides: Partial<DetectedStack> = {}): DetectedStack {
@@ -151,5 +159,127 @@ describe('runNonInteractive', () => {
   it('handles nothing to generate gracefully', () => {
     mockGenerate.mockReturnValue({ created: [], skipped: [] });
     expect(() => runNonInteractive('/tmp/proj', makeStack(), 'standard', ['claude'], false, false, false)).not.toThrow();
+  });
+});
+
+describe('runInteractive', () => {
+  let consoleSpy: ReturnType<typeof jest.spyOn>;
+
+  beforeEach(() => {
+    consoleSpy = jest.spyOn(console, 'log').mockImplementation(jest.fn() as never);
+    jest.spyOn(console, 'error').mockImplementation(jest.fn() as never);
+    mockSelect.mockReset();
+    mockMultiselect.mockReset();
+    mockConfirm.mockReset();
+    mockIsCancel.mockReset();
+    mockCancel.mockReset();
+    mockNote.mockReset();
+    mockIntro.mockReset();
+    mockOutro.mockReset();
+    mockSpinnerStart.mockReset();
+    mockSpinnerStop.mockReset();
+    mockSpinner.mockReturnValue({ start: mockSpinnerStart, stop: mockSpinnerStop });
+    mockSelect.mockResolvedValue('standard');
+    mockMultiselect.mockResolvedValue(['claude']);
+    mockConfirm.mockResolvedValue(true);
+    mockIsCancel.mockReturnValue(false);
+    mockGenerate.mockReturnValue({ created: [], skipped: [] });
+  });
+
+  afterEach(() => {
+    consoleSpy.mockRestore();
+    jest.restoreAllMocks();
+  });
+
+  it('runs without throwing', async () => {
+    await expect(runInteractive('/tmp/proj', makeStack(), false, false)).resolves.toBeUndefined();
+  });
+
+  it('calls generate with selected tier and tools', async () => {
+    mockSelect.mockResolvedValue('enterprise');
+    mockMultiselect.mockResolvedValue(['claude', 'cursor']);
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    expect(mockGenerate).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ tier: 'enterprise', tools: ['claude', 'cursor'] }),
+    );
+  });
+
+  it('calls p.intro and p.outro', async () => {
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    expect(mockIntro).toHaveBeenCalled();
+    expect(mockOutro).toHaveBeenCalled();
+  });
+
+  it('calls spinner start and stop', async () => {
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    expect(mockSpinnerStart).toHaveBeenCalled();
+    expect(mockSpinnerStop).toHaveBeenCalled();
+  });
+
+  it('exits when tier is cancelled', async () => {
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation(jest.fn() as never);
+    mockIsCancel.mockReturnValueOnce(true);
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    expect(exitSpy).toHaveBeenCalledWith(0);
+    exitSpy.mockRestore();
+  });
+
+  it('exits when tools is cancelled', async () => {
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation(jest.fn() as never);
+    mockIsCancel.mockReturnValueOnce(false).mockReturnValueOnce(true);
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    expect(exitSpy).toHaveBeenCalledWith(0);
+    exitSpy.mockRestore();
+  });
+
+  it('exits when migrate is cancelled', async () => {
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation(jest.fn() as never);
+    mockIsCancel.mockReturnValueOnce(false).mockReturnValueOnce(false).mockReturnValueOnce(true);
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    expect(exitSpy).toHaveBeenCalledWith(0);
+    exitSpy.mockRestore();
+  });
+
+  it('exits when confirmation is cancelled', async () => {
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation(jest.fn() as never);
+    mockIsCancel
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true);
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    expect(exitSpy).toHaveBeenCalledWith(0);
+    exitSpy.mockRestore();
+  });
+
+  it('exits when confirmation is false (not cancelled)', async () => {
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation(jest.fn() as never);
+    mockIsCancel.mockReturnValue(false);
+    mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    expect(exitSpy).toHaveBeenCalledWith(0);
+    exitSpy.mockRestore();
+  });
+
+  it('calls p.note with next steps when files created', async () => {
+    mockGenerate.mockReturnValue({ created: ['/tmp/proj/CLAUDE.md'], skipped: [] });
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    expect(mockNote).toHaveBeenCalled();
+  });
+
+  it('calls p.note with migration steps when migrate=true', async () => {
+    mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+    mockGenerate.mockReturnValue({ created: ['/tmp/proj/CLAUDE.md'], skipped: [] });
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+    const noteCall = mockNote.mock.calls[0];
+    expect(noteCall).toBeDefined();
+    expect(noteCall[0]).toContain('migration-audit');
+  });
+
+  it('does not call p.note when dryRun=true', async () => {
+    mockGenerate.mockReturnValue({ created: ['/tmp/proj/CLAUDE.md'], skipped: [] });
+    await runInteractive('/tmp/proj', makeStack(), false, true);
+    expect(mockNote).not.toHaveBeenCalled();
   });
 });

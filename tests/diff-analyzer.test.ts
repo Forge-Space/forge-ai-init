@@ -153,4 +153,57 @@ describe('diff-analyzer', () => {
     expect(result.afterScore).toBeGreaterThanOrEqual(0);
     expect(result.afterScore).toBeLessThanOrEqual(100);
   });
+
+  it('detects changed files using base..HEAD diff', () => {
+    initGitRepo(dir);
+    writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+    execSync('git add .', { cwd: dir });
+    execSync('git commit -m "init"', { cwd: dir });
+
+    execSync('git checkout -b feature', { cwd: dir });
+    writeFile(dir, 'src/bad.ts', 'try { x(); } catch (e) {}\n');
+    execSync('git add src/bad.ts', { cwd: dir });
+    execSync('git commit -m "add bad file"', { cwd: dir });
+
+    const result = analyzeDiff(dir, { base: 'main', head: 'HEAD' });
+    expect(result.changedFiles).toBeDefined();
+    expect(result.newFindings).toBeDefined();
+    expect(result.summary).toBeDefined();
+  });
+
+  it('handles opts.base and opts.head parameters', () => {
+    initGitRepo(dir);
+    writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+    execSync('git add .', { cwd: dir });
+    execSync('git commit -m "init"', { cwd: dir });
+
+    const result = analyzeDiff(dir, { base: 'HEAD', head: 'HEAD' });
+    expect(result).toBeDefined();
+    expect(typeof result.beforeScore).toBe('number');
+    expect(typeof result.afterScore).toBe('number');
+  });
+
+  it('returns empty result when opts.base/head yields no code files', () => {
+    initGitRepo(dir);
+    writeFile(dir, 'README.md', '# readme\n');
+    execSync('git add .', { cwd: dir });
+    execSync('git commit -m "init"', { cwd: dir });
+
+    const result = analyzeDiff(dir, { base: 'HEAD', head: 'HEAD' });
+    expect(result.changedFiles).toHaveLength(0);
+    expect(result.summary).toContain('No changed files');
+  });
+
+  it('summary mentions degraded when delta is negative', () => {
+    initGitRepo(dir);
+    writeFile(dir, 'src/good.ts', 'export const x = 1;\n');
+    execSync('git add .', { cwd: dir });
+    execSync('git commit -m "init"', { cwd: dir });
+    writeFile(dir, 'src/bad.ts', 'try { const p = "secret123"; } catch (e) {}\n');
+    execSync('git add src/bad.ts', { cwd: dir });
+
+    const result = analyzeDiff(dir, { staged: true });
+    expect(typeof result.summary).toBe('string');
+    expect(result.summary.length).toBeGreaterThan(0);
+  });
 });

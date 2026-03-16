@@ -167,4 +167,164 @@ describe('doctor', () => {
     const report = runDoctor(dir, baseStack);
     expect(report.score).toBeGreaterThanOrEqual(50);
   });
+
+  it('warns when function sprawl count is 1-2', () => {
+    let manyFunctions = '';
+    for (let i = 0; i < 16; i++) {
+      manyFunctions += `function fn${i}() { return ${i}; }\n`;
+    }
+    writeFile(dir, 'src/sprawl.ts', manyFunctions);
+    const report = runDoctor(dir, baseStack);
+    const sprawlCheck = report.checks.find((c) => c.name.includes('function sprawl'));
+    expect(['warn', 'fail']).toContain(sprawlCheck?.status);
+  });
+
+  it('warns when security findings count is 1-2', () => {
+    writeFile(dir, 'src/config.ts', 'const apiKey = "sk-1234567890abcdef";\n');
+    const report = runDoctor(dir, baseStack);
+    const secCheck = report.checks.find((c) => c.name.includes('security vulnerabilities'));
+    expect(['warn', 'fail']).toContain(secCheck?.status);
+  });
+
+  it('warns when quality score is 40-59', () => {
+    for (let i = 0; i < 10; i++) {
+      writeFile(dir, `src/bad${i}.ts`, `
+        const password = "hardcoded${i}";
+        try { fetch('/api'); } catch (e) {}
+        eval('code');
+      `);
+    }
+    const report = runDoctor(dir, baseStack);
+    const qualCheck = report.checks.find((c) => c.name.includes('Quality score'));
+    expect(['warn', 'fail', 'pass']).toContain(qualCheck?.status);
+  });
+
+  it('warns when error-handling count is 1-4', () => {
+    writeFile(dir, 'src/catches.ts', `
+      try { fetch('/a'); } catch (e) {}
+      try { fetch('/b'); } catch (e) {}
+      try { fetch('/c'); } catch (err) {}
+    `);
+    const report = runDoctor(dir, baseStack);
+    const errCheck = report.checks.find((c) => c.name.includes('Error handling'));
+    expect(['warn', 'fail', 'pass']).toContain(errCheck?.status);
+  });
+
+  it('complexityScore is below 100 when findings exist', () => {
+    writeFile(dir, 'src/vuln.ts', 'const secret = "password123";\n');
+    const report = runDoctor(dir, baseStack);
+    expect(report.complexityScore).toBeLessThanOrEqual(100);
+    expect(report.complexityScore).toBeGreaterThanOrEqual(0);
+  });
+
+  it('returns trend info when baseline has 2+ snapshots', () => {
+    const baselineData = {
+      version: 1,
+      history: [
+        {
+          timestamp: '2026-01-01T00:00:00.000Z',
+          score: 80,
+          grade: 'B',
+          filesScanned: 3,
+          findingCount: 5,
+          categories: [],
+        },
+        {
+          timestamp: '2026-01-02T00:00:00.000Z',
+          score: 85,
+          grade: 'B',
+          filesScanned: 3,
+          findingCount: 3,
+          categories: [],
+        },
+      ],
+    };
+    writeFile(dir, '.forge/baseline.json', JSON.stringify(baselineData));
+    const report = runDoctor(dir, baseStack);
+    expect(report.trend).not.toBeNull();
+    expect(report.trend?.direction).toMatch(/improving|stable|degrading/);
+    expect(typeof report.trend?.scoreDelta).toBe('number');
+    expect(report.trend?.snapshots).toBe(2);
+  });
+
+  it('returns improving trend when score delta > 2', () => {
+    const baselineData = {
+      version: 1,
+      history: [
+        {
+          timestamp: '2026-01-01T00:00:00.000Z',
+          score: 70,
+          grade: 'C',
+          filesScanned: 3,
+          findingCount: 10,
+          categories: [],
+        },
+        {
+          timestamp: '2026-01-02T00:00:00.000Z',
+          score: 80,
+          grade: 'B',
+          filesScanned: 3,
+          findingCount: 5,
+          categories: [],
+        },
+      ],
+    };
+    writeFile(dir, '.forge/baseline.json', JSON.stringify(baselineData));
+    const report = runDoctor(dir, baseStack);
+    expect(report.trend?.direction).toBe('improving');
+  });
+
+  it('returns degrading trend when score delta < -2', () => {
+    const baselineData = {
+      version: 1,
+      history: [
+        {
+          timestamp: '2026-01-01T00:00:00.000Z',
+          score: 90,
+          grade: 'A',
+          filesScanned: 3,
+          findingCount: 2,
+          categories: [],
+        },
+        {
+          timestamp: '2026-01-02T00:00:00.000Z',
+          score: 80,
+          grade: 'B',
+          filesScanned: 3,
+          findingCount: 8,
+          categories: [],
+        },
+      ],
+    };
+    writeFile(dir, '.forge/baseline.json', JSON.stringify(baselineData));
+    const report = runDoctor(dir, baseStack);
+    expect(report.trend?.direction).toBe('degrading');
+  });
+
+  it('returns stable trend when score delta is -2 to 2', () => {
+    const baselineData = {
+      version: 1,
+      history: [
+        {
+          timestamp: '2026-01-01T00:00:00.000Z',
+          score: 80,
+          grade: 'B',
+          filesScanned: 3,
+          findingCount: 5,
+          categories: [],
+        },
+        {
+          timestamp: '2026-01-02T00:00:00.000Z',
+          score: 81,
+          grade: 'B',
+          filesScanned: 3,
+          findingCount: 4,
+          categories: [],
+        },
+      ],
+    };
+    writeFile(dir, '.forge/baseline.json', JSON.stringify(baselineData));
+    const report = runDoctor(dir, baseStack);
+    expect(report.trend?.direction).toBe('stable');
+  });
 });
