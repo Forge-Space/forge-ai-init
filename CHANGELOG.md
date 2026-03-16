@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-03-15
+
+### Changed
+
+- **Split `src/rules/index.ts`** (925→22 lines) into 10 category sub-files (`security.ts`=45 rules, `engineering.ts`=27, `error-handling.ts`=14, `scalability.ts`=10, `type-safety.ts`=5, `async.ts`=4, `react.ts`=3, `architecture.ts`=3, `accessibility.ts`=3, `hardcoded-values.ts`=1). Total 115 rules preserved. `index.ts` now re-exports only.
+- **Refactored `src/assessor.ts`** (855→149 lines) — 5 collector functions extracted to `src/assessors/` sub-modules (`dependencies.ts`, `architecture.ts`, `security.ts`, `quality.ts`, `migration.ts`). Public `assessProject()` API unchanged.
+- **Refactored `src/checker.ts`** (535→73 lines) — 7 domain check functions extracted to `src/checkers/` sub-modules (`rules.ts`, `skills.ts`, `hooks.ts`, `ci.ts`, `security.ts`, `quality.ts`, `policies.ts`). Public `runAudit()` API unchanged.
+- **Fixed CI workflow** — removed expired `FORGE_TENANT_PROFILES_READ_TOKEN` cross-repo checkout reference; inline `.forge/tenant-profile.yaml` is the source of truth.
+
+### Added
+
+- **10 new test suites** in `tests/rules/` — one per category file. Each verifies exact rule count, no duplicate IDs, required fields, valid severity values, and correct category label. Suite count: 28→38, test count: 504→554.
+
 ## [0.28.0] - 2026-03-15
 
 ### Changed
@@ -53,8 +66,8 @@
 - Generated hooks/settings/test-autogen commands now include tenant arguments by default.
 - `quality-gate` now runs `forge-ai-action` with `command: diff` to enforce PR regressions
   instead of failing on historical repository-wide debt.
-- CI `quality-gate` now checks out `forge-tenant-profiles`, validates tenant variables, and
-  fails fast when `FORGE_TENANT_ID` / `FORGE_TENANT_PROFILE_REF` are missing or invalid.
+- CI `quality-gate` reads tenant config from the inline committed `.forge/tenant-profile.yaml`
+  file, removing the dependency on cross-repo checkout and the `FORGE_TENANT_PROFILES_READ_TOKEN` PAT.
 - Version strings in `reporter.ts` and `index.ts` now read dynamically from `package.json`.
 
 ### Fixed
