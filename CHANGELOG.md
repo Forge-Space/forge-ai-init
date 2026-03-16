@@ -2,7 +2,20 @@
 
 ## [Unreleased]
 
-## [0.29.0] - 2026-03-15
+## [0.29.1] - 2026-03-15
+
+### Added
+
+- **15 new test suites** in `tests/commands/` — one per command handler (`ui`, `parse`, `check`, `assess`, `scan`, `gate`, `baseline`, `ci`, `diff`, `doctor`, `migrate-plan`, `plan`, `scaffold`, `test-autogen`, `init`). 243 new tests covering all output modes, mocked domain calls, and pure helper functions. Suite count: 38→53, test count: 554→787.
+- **5 new generator tests** in `tests/generators/claude-md.test.ts` for Go, Rust, Java, Kotlin, Svelte rule templates.
+
+### Fixed
+
+- Duplicate `## [0.29.0]` header removed from CHANGELOG.md.
+
+### Coverage
+
+- Overall coverage: 65% → **80%+** (statements 91.5%, branches 80.24%, functions 93.25%).
 
 ## [0.29.0] - 2026-03-15
 

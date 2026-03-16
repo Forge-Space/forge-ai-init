@@ -115,6 +115,51 @@ describe('generateClaudeMd', () => {
     const md = generateClaudeMd(makeStack(), 'standard');
     expect(md).toContain('forge-ai-init');
   });
+
+  it('includes Go rules for Go projects', () => {
+    const md = generateClaudeMd(
+      makeStack({ language: 'go' }),
+      'standard',
+    );
+    expect(md).toContain('## Go');
+    expect(md).toContain('errgroup');
+  });
+
+  it('includes Rust rules for Rust projects', () => {
+    const md = generateClaudeMd(
+      makeStack({ language: 'rust' }),
+      'standard',
+    );
+    expect(md).toContain('## Rust');
+    expect(md).toContain('clippy');
+  });
+
+  it('includes Java rules for Java projects', () => {
+    const md = generateClaudeMd(
+      makeStack({ language: 'java' }),
+      'standard',
+    );
+    expect(md).toContain('## Java');
+    expect(md).toContain('Optional');
+  });
+
+  it('includes Kotlin rules for Kotlin projects', () => {
+    const md = generateClaudeMd(
+      makeStack({ language: 'kotlin' }),
+      'standard',
+    );
+    expect(md).toContain('## Kotlin');
+    expect(md).toContain('coroutines');
+  });
+
+  it('includes Svelte rules for Svelte projects', () => {
+    const md = generateClaudeMd(
+      makeStack({ framework: 'svelte' }),
+      'standard',
+    );
+    expect(md).toContain('## Svelte');
+    expect(md).toContain('$state');
+  });
 });
 
 describe('generateCursorRules', () => {
