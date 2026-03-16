@@ -19,4 +19,12 @@ export const reactRules: Rule[] = [
     message: '4+ useState calls — consolidate with useReducer or object state',
     extensions: ['.tsx', '.jsx'],
   },
+  {
+    pattern: /on:\w+\s*=\s*\{[^}]*\$\s*:/g,
+    category: 'react',
+    severity: 'medium',
+    rule: 'svelte-reactive-event',
+    message: 'Reactive statement in event handler — may cause unexpected re-renders',
+    extensions: ['.svelte'],
+  },
 ];

@@ -213,13 +213,15 @@ regressions introduced by the PR delta without failing on pre-existing repositor
 
 ### CI Tenant Contract
 
-The `quality-gate` job requires these repository variables:
+The `quality-gate` job reads tenant configuration from the inline committed file:
 
-- `FORGE_TENANT_ID`
-- `FORGE_TENANT_PROFILE_REF`
+```
+.forge/tenant-profile.yaml
+```
 
-CI checks out `Forge-Space/forge-tenant-profiles` and fails fast when either variable is missing
-or when `FORGE_TENANT_PROFILE_REF` does not resolve to a file in the runner workspace.
+No external repository checkout or secrets are required. The file is committed directly in this
+repo and validated by the CI job at runtime. If the file is missing the job fails fast with a
+clear error message.
 ## Update Governance Files
 
 Run `update` to re-generate governance files with the latest rules and patterns:
