@@ -2,7 +2,21 @@
 
 ## [Unreleased]
 
-## [0.32.0] - 2026-03-16
+## [0.33.0] - 2026-03-16
+
+### Changed
+
+- **Refactored `src/generators/migration.ts`** (258→1 lines) into `src/generators/migration/` sub-modules (`types.ts`, `strategy.ts`, `phases.ts`, `roadmap.ts`, `adr.ts`, `index.ts`). Public `generateMigrationFiles()` API unchanged.
+
+### Added
+
+- **Coverage push to 87%+ branches** — 30 new tests targeting `src/detector/` (language, framework, tooling branches) and `src/migrate-analyzer/` (boundaries, dependency-risks, phases). Suite count: 54, test count: 865→895.
+  - `tests/detector.test.ts`: +24 tests (kotlin detection, nuxt/sveltekit, webpack/esbuild/rollup/parcel/tsup, cargo, mocha/playwright/cypress, pytest, gitlab-ci, jenkins)
+  - `tests/migrate-analyzer.test.ts`: +6 tests (function-sprawl boundaries, undefined deps, dep count thresholds, effort upper tiers)
+
+### Coverage
+
+- Overall: 94%+ statements, **87%+ branches**, 97%+ functions, 96%+ lines.
 
 ## [0.32.0] - 2026-03-16
 

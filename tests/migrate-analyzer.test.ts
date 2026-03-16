@@ -1,8 +1,14 @@
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { analyzeMigration } from '../src/migrate-analyzer.js';
+import { findStranglerBoundaries } from '../src/migrate-analyzer/boundaries.js';
+import { analyzeDependencyRisks } from '../src/migrate-analyzer/dependency-risks.js';
+import { estimateEffort } from '../src/migrate-analyzer/phases.js';
 import type { DetectedStack } from '../src/types.js';
+import type { ScanReport } from '../src/scanner.js';
+import type { StranglerBoundary, TypingStep, DependencyRisk } from '../src/migrate-analyzer/types.js';
 
 function makeTempDir(): string {
   const dir = join(tmpdir(), `forge-mig-${Date.now()}`);
@@ -319,5 +325,145 @@ describe('migrate-analyzer', () => {
     }
     const plan = analyzeMigration(dir, baseStack);
     expect(plan.estimatedEffort).toMatch(/day|week|month/);
+  });
+});
+
+// Helper: minimal valid ScanReport with custom findings
+function makeScanReport(findings: ScanReport['findings']): ScanReport {
+  return {
+    findings,
+    filesScanned: findings.length || 1,
+    score: 80,
+    grade: 'B',
+    summary: [],
+    topFiles: [],
+  };
+}
+
+describe('findStranglerBoundaries — coverage gaps', () => {
+  it('creates boundary for function-sprawl files not in god-file list', () => {
+    const scan = makeScanReport([
+      {
+        file: 'src/routes/api.ts',
+        line: 1,
+        category: 'architecture',
+        severity: 'high',
+        rule: 'function-sprawl',
+        message: 'Too many exports',
+      },
+    ]);
+    const boundaries = findStranglerBoundaries('/tmp', scan);
+    expect(boundaries.length).toBe(1);
+    expect(boundaries[0]!.module).toBe('src/routes/api.ts');
+    expect(boundaries[0]!.reason).toContain('Function sprawl');
+    expect(boundaries[0]!.type).toBe('api');
+  });
+
+  it('deduplication guard: skips function-sprawl file already in god-file list', () => {
+    // Same file appears as both god-file AND function-sprawl — should only produce one boundary
+    const scan = makeScanReport([
+      {
+        file: 'src/big-service.ts',
+        line: 1,
+        category: 'architecture',
+        severity: 'high',
+        rule: 'god-file',
+        message: 'God file',
+      },
+      {
+        file: 'src/big-service.ts',
+        line: 2,
+        category: 'architecture',
+        severity: 'medium',
+        rule: 'function-sprawl',
+        message: 'Too many exports',
+      },
+    ]);
+    const boundaries = findStranglerBoundaries('/tmp', scan);
+    // Only one boundary — the god-file one; the function-sprawl duplicate is skipped
+    expect(boundaries.filter((b) => b.module === 'src/big-service.ts').length).toBe(1);
+    expect(boundaries[0]!.reason).toContain('God file');
+  });
+});
+
+describe('analyzeDependencyRisks — coverage gaps', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = join(tmpdir(), `forge-dep-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('handles package.json with no dependencies key (undefined deps)', () => {
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({ name: 'test', devDependencies: { typescript: '^5.0.0' } }),
+    );
+    // Should not throw; dependencies ?? {} resolves to empty object
+    const risks = analyzeDependencyRisks(dir);
+    expect(Array.isArray(risks)).toBe(true);
+    // No dependency count warning since pkg.dependencies is undefined → count = 0
+    expect(risks.every((r) => !r.name.includes('dependency count'))).toBe(true);
+  });
+
+  it('adds medium severity risk when dep count is 31-50', () => {
+    const deps: Record<string, string> = {};
+    for (let i = 0; i < 31; i++) deps[`pkg-${i}`] = '1.0.0';
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({ name: 'test', dependencies: deps }),
+    );
+    const risks = analyzeDependencyRisks(dir);
+    const countRisk = risks.find((r) => r.name.includes('dependency count'));
+    expect(countRisk).toBeDefined();
+    expect(countRisk!.severity).toBe('medium');
+  });
+
+  it('adds high severity risk when dep count exceeds 50', () => {
+    const deps: Record<string, string> = {};
+    for (let i = 0; i < 51; i++) deps[`pkg-${i}`] = '1.0.0';
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({ name: 'test', dependencies: deps }),
+    );
+    const risks = analyzeDependencyRisks(dir);
+    const countRisk = risks.find((r) => r.name.includes('dependency count'));
+    expect(countRisk).toBeDefined();
+    expect(countRisk!.severity).toBe('high');
+  });
+});
+
+describe('estimateEffort — upper tier branches', () => {
+  const emptyTypingSteps: TypingStep[] = [];
+  const emptyDepRisks: DependencyRisk[] = [];
+
+  function makeBoundaries(count: number): StranglerBoundary[] {
+    return Array.from({ length: count }, (_, i) => ({
+      module: `src/module${i}.ts`,
+      type: 'service' as const,
+      complexity: 'medium' as const,
+      reason: 'Test boundary',
+      dependents: 1,
+    }));
+  }
+
+  it('returns "2-4 weeks" when hours are between 81 and 160', () => {
+    // 11 boundaries × 8h = 88h  → should be in the 81-160 range
+    const boundaries = makeBoundaries(11);
+    const scan = makeScanReport([]);
+    const effort = estimateEffort(boundaries, emptyTypingSteps, emptyDepRisks, scan);
+    expect(effort).toBe('2-4 weeks');
+  });
+
+  it('returns "1-2 months" when hours exceed 160', () => {
+    // 21 boundaries × 8h = 168h  → should exceed 160
+    const boundaries = makeBoundaries(21);
+    const scan = makeScanReport([]);
+    const effort = estimateEffort(boundaries, emptyTypingSteps, emptyDepRisks, scan);
+    expect(effort).toBe('1-2 months');
   });
 });

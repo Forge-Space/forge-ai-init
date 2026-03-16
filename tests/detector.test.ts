@@ -1,7 +1,16 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { detectStack } from '../src/detector.js';
+import { detectLanguage } from '../src/detector/language.js';
+import { detectFramework } from '../src/detector/framework.js';
+import {
+  detectBuildTool,
+  detectPackageManager,
+  detectTestFramework,
+  detectCIProvider,
+} from '../src/detector/tooling.js';
 
 function createTempDir(): string {
   const dir = join(
@@ -401,5 +410,241 @@ describe('detectStack', () => {
       expect(stack.hasCi).toBe(true);
       expect(stack.ciProvider).toBe('github-actions');
     });
+  });
+});
+
+// ─── language.ts branch coverage ────────────────────────────────────────────
+
+describe('detectLanguage — branch coverage', () => {
+  it('detects kotlin when build.gradle.kts present AND .kt source exists', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-lang-kotlin-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'build.gradle.kts'), '');
+      // hasKotlinSources scans src/ recursively for *.kt files
+      mkdirSync(join(dir, 'src', 'main', 'kotlin'), { recursive: true });
+      writeFileSync(join(dir, 'src', 'main', 'kotlin', 'App.kt'), '');
+      expect(detectLanguage(dir)).toBe('kotlin');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to java when build.gradle.kts present but no .kt sources', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-lang-java-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'build.gradle.kts'), '');
+      // no src/ directory → hasKotlinSources returns false → falls to java branch
+      expect(detectLanguage(dir)).toBe('java');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns javascript when no markers are present (no package.json)', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-lang-js-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      // empty dir — hits the final `return 'javascript'` fallback
+      expect(detectLanguage(dir)).toBe('javascript');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ─── framework.ts branch coverage ───────────────────────────────────────────
+
+describe('detectFramework — branch coverage', () => {
+  it('detects nuxt from nuxt dependency', () => {
+    expect(detectFramework('/unused', { nuxt: '^3.0.0' })).toBe('nuxt');
+  });
+
+  it('detects sveltekit from @sveltejs/kit dependency', () => {
+    expect(detectFramework('/unused', { '@sveltejs/kit': '^2.0.0' })).toBe(
+      'sveltekit',
+    );
+  });
+
+  it('returns undefined for requirements.txt with no django/flask/fastapi', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-fw-py-plain-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'requirements.txt'), 'requests==2.31.0\nnumpy\n');
+      expect(detectFramework(dir, {})).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('detects django from requirements.txt', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-fw-django-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'requirements.txt'), 'django==4.2.0\n');
+      expect(detectFramework(dir, {})).toBe('django');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('detects flask from requirements.txt', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-fw-flask-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'requirements.txt'), 'flask==3.0.0\n');
+      expect(detectFramework(dir, {})).toBe('flask');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ─── tooling.ts branch coverage ─────────────────────────────────────────────
+
+describe('detectBuildTool — branch coverage', () => {
+  it('detects webpack', () => {
+    expect(detectBuildTool({ webpack: '^5.0.0' })).toBe('webpack');
+  });
+
+  it('detects webpack-cli', () => {
+    expect(detectBuildTool({ 'webpack-cli': '^5.0.0' })).toBe('webpack');
+  });
+
+  it('detects esbuild', () => {
+    expect(detectBuildTool({ esbuild: '^0.24.0' })).toBe('esbuild');
+  });
+
+  it('detects tsup', () => {
+    expect(detectBuildTool({ tsup: '^8.0.0' })).toBe('tsup');
+  });
+
+  it('detects rollup', () => {
+    expect(detectBuildTool({ rollup: '^4.0.0' })).toBe('rollup');
+  });
+
+  it('detects parcel', () => {
+    expect(detectBuildTool({ parcel: '^2.0.0' })).toBe('parcel');
+  });
+});
+
+describe('detectPackageManager — branch coverage', () => {
+  it('detects cargo from Cargo.toml', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-pm-cargo-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'Cargo.toml'), '[package]');
+      writeFileSync(join(dir, 'Cargo.lock'), '');
+      expect(detectPackageManager(dir)).toBe('cargo');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('detectTestFramework — branch coverage', () => {
+  it('detects mocha', () => {
+    expect(detectTestFramework('/unused', { mocha: '^10.0.0' })).toBe('mocha');
+  });
+
+  it('detects playwright via playwright dep', () => {
+    expect(detectTestFramework('/unused', { playwright: '^1.0.0' })).toBe(
+      'playwright',
+    );
+  });
+
+  it('detects playwright via @playwright/test dep', () => {
+    expect(
+      detectTestFramework('/unused', { '@playwright/test': '^1.0.0' }),
+    ).toBe('playwright');
+  });
+
+  it('detects cypress', () => {
+    expect(detectTestFramework('/unused', { cypress: '^13.0.0' })).toBe(
+      'cypress',
+    );
+  });
+
+  it('detects pytest from pyproject.toml with [tool.pytest section', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-pytest-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(
+        join(dir, 'pyproject.toml'),
+        '[tool.pytest.ini_options]\nminversion = "7.0"\n',
+      );
+      expect(detectTestFramework(dir, {})).toBe('pytest');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns undefined when pyproject.toml exists but has no pytest section', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-pytest-none-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'pyproject.toml'), '[tool.poetry]\nname = "app"\n');
+      expect(detectTestFramework(dir, {})).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('detectCIProvider — branch coverage', () => {
+  it('detects gitlab-ci from .gitlab-ci.yml', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ci-gitlab-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, '.gitlab-ci.yml'), 'stages:\n  - build\n');
+      expect(detectCIProvider(dir)).toBe('gitlab-ci');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('detects jenkins from Jenkinsfile', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ci-jenkins-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'Jenkinsfile'), 'pipeline {}');
+      expect(detectCIProvider(dir)).toBe('jenkins');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
