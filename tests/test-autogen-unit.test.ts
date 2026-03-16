@@ -3,7 +3,7 @@
  * Tests: bypass.ts, git.ts, index.ts (bypass + skip paths), requirements.ts
  */
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
@@ -350,6 +350,79 @@ describe('summarizeTestAutogen', () => {
     };
     const summary = summarizeTestAutogen(result);
     expect(summary).toContain('bypassed=true');
+  });
+});
+
+// ─── telemetry.ts ─────────────────────────────────────────────────────────────
+
+import { appendJsonLine, updateBaseline } from '../src/test-autogen/telemetry.js';
+
+describe('appendJsonLine', () => {
+  it('creates parent directories and appends a JSON line', () => {
+    const dir = makeTempDir();
+    const filePath = join(dir, 'deep', 'nested', 'telemetry.jsonl');
+
+    appendJsonLine(filePath, { event: 'test', value: 42 });
+
+    const content = readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(content.trim());
+    expect(parsed.event).toBe('test');
+    expect(parsed.value).toBe(42);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('appends multiple lines to the same file', () => {
+    const dir = makeTempDir();
+    const filePath = join(dir, 'telemetry.jsonl');
+
+    appendJsonLine(filePath, { run: 1 });
+    appendJsonLine(filePath, { run: 2 });
+
+    const lines = readFileSync(filePath, 'utf-8').trim().split('\n');
+    expect(lines).toHaveLength(2);
+    expect(JSON.parse(lines[0]!).run).toBe(1);
+    expect(JSON.parse(lines[1]!).run).toBe(2);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('updateBaseline', () => {
+  // lines 28-33: existsSync false — baseline file does not exist yet
+  it('creates baseline file when it does not exist', () => {
+    const dir = makeTempDir();
+
+    updateBaseline(dir, 3, 1);
+
+    const baselinePath = join(dir, '.forge', 'test-autogen-baseline.json');
+    expect(existsSync(baselinePath)).toBe(true);
+
+    const data = JSON.parse(readFileSync(baselinePath, 'utf-8'));
+    expect(data.runs).toBe(1);
+    expect(data.created).toBe(3);
+    expect(data.missing).toBe(1);
+    expect(typeof data.lastRunAt).toBe('string');
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  // lines 28-37: existsSync true — accumulates into existing baseline
+  it('accumulates into existing baseline file (lines 28-37)', () => {
+    const dir = makeTempDir();
+
+    // First run — creates the file
+    updateBaseline(dir, 2, 0);
+    // Second run — reads and accumulates
+    updateBaseline(dir, 1, 3);
+
+    const baselinePath = join(dir, '.forge', 'test-autogen-baseline.json');
+    const data = JSON.parse(readFileSync(baselinePath, 'utf-8'));
+    expect(data.runs).toBe(2);
+    expect(data.created).toBe(3);  // 2 + 1
+    expect(data.missing).toBe(3);  // 0 + 3
+
+    rmSync(dir, { recursive: true, force: true });
   });
 });
 

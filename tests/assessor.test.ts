@@ -1,7 +1,8 @@
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { assessProject } from '../src/assessor.js';
+import { collectSecurityFindings } from '../src/assessors/security.js';
 import type { DetectedStack } from '../src/types.js';
 
 function makeTempDir(): string {
@@ -277,6 +278,17 @@ describe('assessProject', () => {
     });
   });
 
+  describe('security collector — targeted branch coverage', () => {
+    it('line 23: flags missing .gitignore entirely (high severity)', () => {
+      // No .gitignore at all → else branch at line 22-28
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+      const report = assessProject(dir, makeStack());
+      const noGitignore = report.findings.find((f) => f.title === 'No .gitignore');
+      expect(noGitignore).toBeDefined();
+      expect(noGitignore!.severity).toBe('high');
+    });
+  });
+
   describe('migration readiness collector', () => {
     it('flags legacy stacks (jQuery)', () => {
       writeFile(dir, '.gitignore', '.env\n');
@@ -342,5 +354,57 @@ describe('assessProject', () => {
         (f) => f.title === 'JavaScript without TypeScript',
       )).toBeDefined();
     });
+  });
+});
+
+// ─── collectSecurityFindings — direct unit tests for uncovered branches ───────
+
+describe('collectSecurityFindings', () => {
+  let dir: string;
+
+  beforeEach(() => { dir = makeTempDir(); });
+  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+
+  // line 93: catch block — skip unreadable files gracefully
+  it('skips unreadable files without throwing (line 93 catch)', () => {
+    const filePath = join(dir, '.gitignore');
+    writeFileSync(filePath, '.env\n');
+
+    // Create a file then make it unreadable
+    const secretFile = join(dir, 'secret.ts');
+    writeFileSync(secretFile, 'const password = "hunter2";\n');
+    chmodSync(secretFile, 0o000);
+
+    let findings: ReturnType<typeof collectSecurityFindings>;
+    try {
+      findings = collectSecurityFindings(dir, [secretFile]);
+    } finally {
+      // Restore permissions so cleanup works
+      chmodSync(secretFile, 0o644);
+    }
+
+    // Should not throw; the unreadable file is skipped
+    expect(Array.isArray(findings!)).toBe(true);
+  });
+
+  // lines 101-111: secretCount cap at 10 — more than 10 secret matches
+  it('caps secret findings at 10 (lines 101-111)', () => {
+    writeFileSync(join(dir, '.gitignore'), '.env\n');
+
+    // Each line matches the hardcoded-secret pattern: keyword `token` + value
+    // Use a single file with 15 separate token assignments (each on its own line)
+    const lines = Array.from(
+      { length: 15 },
+      (_, i) => `const token = "supersecret${String(i).padStart(4, '0')}";`,
+    ).join('\n');
+    const sourceFile = join(dir, 'leaked.ts');
+    writeFileSync(sourceFile, lines);
+
+    const findings = collectSecurityFindings(dir, [sourceFile]);
+    const secretFindings = findings.filter((f) => f.title === 'Hardcoded secret');
+
+    // The loop breaks at 10 so we should never exceed 10 secret findings
+    expect(secretFindings.length).toBeLessThanOrEqual(10);
+    expect(secretFindings.length).toBeGreaterThan(0);
   });
 });

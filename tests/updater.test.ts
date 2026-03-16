@@ -200,4 +200,101 @@ describe('updateProject', () => {
     );
     expect(skillFiles.length).toBeGreaterThan(0);
   });
+
+  it('detects copilot tool from .github/copilot-instructions.md', () => {
+    dir = createProject({
+      'package.json': JSON.stringify({ dependencies: {} }),
+      '.github/copilot-instructions.md': '# Copilot Instructions\n',
+    });
+
+    const stack = detectStack(dir);
+    const report = updateProject(dir, stack);
+    expect(report.detectedTools).toContain('copilot');
+  });
+
+  it('detects lite tier when no policies, skills, or mcp.json exist', () => {
+    dir = createProject({
+      'package.json': JSON.stringify({ dependencies: {} }),
+    });
+
+    const stack = detectStack(dir);
+    const report = updateProject(dir, stack);
+    expect(report.detectedTier).toBe('lite');
+  });
+
+  it('returns migrate=false when CLAUDE.md has no Legacy Migration marker', () => {
+    dir = createProject({
+      'package.json': JSON.stringify({ dependencies: {} }),
+      'CLAUDE.md': '# Project Guide\n\nSome content without migration marker.\n',
+    });
+
+    const stack = detectStack(dir);
+    const report = updateProject(dir, stack);
+    expect(report.migrate).toBe(false);
+  });
+
+  it('detects windsurf tool and writes .windsurfrules', () => {
+    dir = createProject({
+      'package.json': JSON.stringify({ dependencies: {} }),
+    });
+
+    const stack = detectStack(dir);
+    generate(stack, {
+      projectDir: dir,
+      tier: 'standard',
+      tools: ['claude', 'windsurf'],
+      force: false,
+      dryRun: false,
+    });
+
+    const report = updateProject(dir, stack);
+    expect(report.detectedTools).toContain('windsurf');
+    const inReport = [
+      ...report.unchanged,
+      ...report.updated,
+      ...report.added,
+    ];
+    expect(inReport.some(f => f === '.windsurfrules')).toBe(true);
+  });
+
+  it('detectMigrationMode returns false when readFileSync throws (CLAUDE.md is a directory)', () => {
+    // When CLAUDE.md is a directory, existsSync returns true but readFileSync throws
+    // The catch block fires and returns false
+    dir = createProject({
+      'package.json': JSON.stringify({ dependencies: {} }),
+    });
+    // Make CLAUDE.md a directory so readFileSync will throw EISDIR
+    mkdirSync(join(dir, 'CLAUDE.md'), { recursive: true });
+
+    const stack = detectStack(dir);
+    // Override tools to skip writing CLAUDE.md (avoids write-to-directory error)
+    const report = updateProject(dir, stack, 'lite', ['cursor']);
+    expect(report.migrate).toBe(false);
+  });
+
+  it('detects copilot tool and writes copilot-instructions.md', () => {
+    dir = createProject({
+      'package.json': JSON.stringify({ dependencies: {} }),
+    });
+
+    const stack = detectStack(dir);
+    generate(stack, {
+      projectDir: dir,
+      tier: 'standard',
+      tools: ['claude', 'copilot'],
+      force: false,
+      dryRun: false,
+    });
+
+    const report = updateProject(dir, stack);
+    expect(report.detectedTools).toContain('copilot');
+    const inReport = [
+      ...report.unchanged,
+      ...report.updated,
+      ...report.added,
+    ];
+    expect(
+      inReport.some(f => f.includes('copilot-instructions.md')),
+    ).toBe(true);
+  });
 });

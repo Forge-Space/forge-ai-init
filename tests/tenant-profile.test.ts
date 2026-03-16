@@ -158,4 +158,142 @@ describe('resolveTenantContext', () => {
     expect(acme.profile.github_owner).toBe('acme-org');
     expect(enterprise.profile.github_owner).toBe('acme-enterprise');
   });
+
+  // ── line 102: unsupported profile format ────────────────────────────────────
+
+  it('throws for unsupported profile file extension', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'tenant.toml');
+    writeFileSync(profilePath, '# toml content\n');
+
+    expect(() =>
+      resolveTenantContext(tempDir, {
+        tenant: 'acme-sandbox',
+        'tenant-profile-ref': profilePath,
+      }),
+    ).toThrow('Unsupported tenant profile format: .toml');
+  });
+
+  // ── line 139: invalid profile fields ────────────────────────────────────────
+
+  it('throws when required profile fields are missing', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'partial.json');
+    writeFileSync(
+      profilePath,
+      JSON.stringify({
+        tenant_id: 'acme-sandbox',
+        github_owner: 'acme-org',
+        // missing sonar_org, npm_scope, quality_policy, ci_policy
+      }),
+    );
+
+    expect(() =>
+      resolveTenantContext(tempDir, {
+        tenant: 'acme-sandbox',
+        'tenant-profile-ref': profilePath,
+      }),
+    ).toThrow('Invalid tenant profile');
+  });
+
+  it('throws when profile is a primitive (not an object)', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'primitive.json');
+    // null parses to null which fails isRecord check → 'Tenant profile must be an object'
+    writeFileSync(profilePath, 'null');
+
+    expect(() =>
+      resolveTenantContext(tempDir, {
+        tenant: 'acme-sandbox',
+        'tenant-profile-ref': profilePath,
+      }),
+    ).toThrow('Tenant profile must be an object');
+  });
+
+  // ── line 150: file:// URL resolution ────────────────────────────────────────
+
+  it('resolves file:// URL profile reference', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'tenant.json');
+    writeFileSync(
+      profilePath,
+      JSON.stringify({
+        tenant_id: 'acme-sandbox',
+        github_owner: 'acme-org',
+        sonar_org: 'acme-org',
+        npm_scope: '@acme',
+        quality_policy: {
+          min_quality_score: 80,
+          block_on_critical: true,
+          block_on_high: true,
+        },
+        ci_policy: {
+          require_sonar: true,
+          require_security_scan: true,
+          enforce_pr_checks: true,
+        },
+      }),
+    );
+
+    const fileUrl = `file://${profilePath}`;
+    const context = resolveTenantContext(tempDir, {
+      tenant: 'acme-sandbox',
+      'tenant-profile-ref': fileUrl,
+    });
+
+    expect(context.tenantId).toBe('acme-sandbox');
+    expect(context.profile.github_owner).toBe('acme-org');
+  });
+
+  // ── line 160: profile not found ─────────────────────────────────────────────
+
+  it('throws when profile path does not exist', () => {
+    tempDir = makeTempDir();
+
+    expect(() =>
+      resolveTenantContext(tempDir, {
+        tenant: 'acme-sandbox',
+        'tenant-profile-ref': 'nonexistent-profile.yaml',
+      }),
+    ).toThrow('Tenant profile not found');
+  });
+
+  // ── line 169: missing tenant id ─────────────────────────────────────────────
+
+  it('throws when neither --tenant nor FORGE_TENANT_ID is set', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'tenant.yaml');
+    writeFileSync(profilePath, YAML_PROFILE);
+
+    expect(() =>
+      resolveTenantContext(tempDir, {
+        'tenant-profile-ref': profilePath,
+      }),
+    ).toThrow('Missing tenant context');
+  });
+
+  // ── line 179: missing profile ref ───────────────────────────────────────────
+
+  it('throws when neither --tenant-profile-ref nor FORGE_TENANT_PROFILE_REF is set', () => {
+    tempDir = makeTempDir();
+
+    expect(() =>
+      resolveTenantContext(tempDir, {
+        tenant: 'acme-sandbox',
+      }),
+    ).toThrow('Missing tenant profile reference');
+  });
+
+  it('uses --tenant-profile fallback option', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'tenant.yaml');
+    writeFileSync(profilePath, YAML_PROFILE);
+
+    const context = resolveTenantContext(tempDir, {
+      tenant: 'acme-sandbox',
+      'tenant-profile': profilePath,
+    });
+
+    expect(context.tenantId).toBe('acme-sandbox');
+  });
 });
