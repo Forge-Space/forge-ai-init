@@ -4,6 +4,8 @@
 
 ## [0.34.0] - 2026-03-16
 
+## [0.34.0] - 2026-03-16
+
 ### Added
 
 - **Coverage push to 90%+ branches** — 43 new tests across `tests/checker.test.ts` (+17), `tests/reporter.test.ts` (+12), `tests/generators/migration.test.ts` (+14). Covers hooks.ts (malformed JSON, missing hooks, command field), skills.ts (warn/fail tiers), ci.ts (GitLab CI, trufflehog/trivy filenames, missing scan files), rules.ts (toolCount warn paths), policies.ts (partial/no-match policy sets), quality.ts (bare detail, formatting warn), reporter severityIcon/gradeIcon all branches, migration strategy/description/rationale/hasCi paths. Test count: 895→938.
