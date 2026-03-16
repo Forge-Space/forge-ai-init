@@ -4,6 +4,8 @@
 
 ## [0.33.0] - 2026-03-16
 
+## [0.33.0] - 2026-03-16
+
 ### Changed
 
 - **Refactored `src/generators/migration.ts`** (258→1 lines) into `src/generators/migration/` sub-modules (`types.ts`, `strategy.ts`, `phases.ts`, `roadmap.ts`, `adr.ts`, `index.ts`). Public `generateMigrationFiles()` API unchanged.
