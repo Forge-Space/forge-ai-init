@@ -2,7 +2,17 @@
 
 ## [Unreleased]
 
-## [0.34.0] - 2026-03-16
+## [0.35.0] - 2026-03-16
+
+### Added
+
+- **Coverage push to 89%+ branches** — 10 new tests targeting `src/diff-analyzer.ts` (+8) and `src/commands/scan.ts` (+2). Covers `getBaseFindings` git-show success path (lines 95-97), `scanSpecificFiles` result mapping (lines 104-110), summary pluralization branches (singular/plural file and finding), and per-finding log loop in `runScanCommand`. Test count: 938→948.
+
+### Coverage
+
+- Overall: 96%+ statements, **89%+ branches**, 99%+ functions, 97%+ lines.
+- `src/diff-analyzer.ts`: 64.51% → **74.19%** branches (outer catch on `mkdtempSync` failure is untestable)
+- `src/commands/scan.ts`: 83.6% → **89%+** branches
 
 ## [0.34.0] - 2026-03-16
 

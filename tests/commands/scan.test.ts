@@ -451,4 +451,32 @@ describe('runWatchCommand', () => {
     expect((mockScanProject as jest.Mock).mock.calls.length).toBe(initialCallCount);
     jest.useRealTimers();
   });
+
+  it('runScan logs individual findings when count is 1-3', () => {
+    mockScanProject.mockReturnValue(makeScanReport({
+      findings: [
+        { file: 'src/a.ts', line: 1, severity: 'high', rule: 'no-console', message: 'Avoid console', category: 'engineering' },
+        { file: 'src/b.ts', line: 2, severity: 'critical', rule: 'hardcoded-secret', message: 'Secret found', category: 'security' },
+      ],
+    }));
+    runWatchCommand('/tmp/proj');
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('src/a.ts');
+    expect(calls).toContain('src/b.ts');
+  });
+
+  it('runScan shows truncation when findings count exceeds 3', () => {
+    mockScanProject.mockReturnValue(makeScanReport({
+      findings: [
+        { file: 'src/a.ts', line: 1, severity: 'high', rule: 'r1', message: 'msg1', category: 'engineering' },
+        { file: 'src/b.ts', line: 2, severity: 'high', rule: 'r2', message: 'msg2', category: 'engineering' },
+        { file: 'src/c.ts', line: 3, severity: 'high', rule: 'r3', message: 'msg3', category: 'engineering' },
+        { file: 'src/d.ts', line: 4, severity: 'high', rule: 'r4', message: 'msg4', category: 'engineering' },
+        { file: 'src/e.ts', line: 5, severity: 'high', rule: 'r5', message: 'msg5', category: 'engineering' },
+      ],
+    }));
+    runWatchCommand('/tmp/proj');
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('more');
+  });
 });
