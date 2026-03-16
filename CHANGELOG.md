@@ -2,7 +2,14 @@
 
 ## [Unreleased]
 
-## [0.31.0] - 2026-03-15
+## [0.32.0] - 2026-03-16
+
+### Changed
+
+- **Refactored `src/detector.ts`** (338→1 lines) into `src/detector/` sub-modules (`utils.ts`, `language.ts`, `framework.ts`, `tooling.ts`, `commands.ts`, `index.ts`). Public `detectStack()` API unchanged.
+- **Refactored `src/scanner.ts`** (325→1 lines) into `src/scanner/` sub-modules (`types.ts`, `file-checker.ts`, `pattern-matcher.ts`, `scoring.ts`, `scanner.ts`, `index.ts`). Public `scanProject()` API unchanged.
+- **Refactored `src/scaffold.ts`** (308→1 lines) into `src/scaffold/` sub-modules (`types.ts`, `base.ts`, `templates-nextjs.ts`, `templates-express.ts`, `templates-fastapi.ts`, `templates-ts-library.ts`, `templates-cli.ts`, `scaffold.ts`, `index.ts`). Public `scaffold()` API unchanged.
+- **Refactored `src/reporter.ts`** (296→1 lines) into `src/reporter/` sub-modules (`types.ts`, `helpers.ts`, `markdown.ts`, `sarif.ts`, `reporter.ts`, `index.ts`). Public `formatReport()`/`writeReport()` API unchanged.
 
 ## [0.31.0] - 2026-03-15
 
