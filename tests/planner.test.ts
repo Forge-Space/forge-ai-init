@@ -187,6 +187,33 @@ describe('planner', () => {
     ).toBe(true);
   });
 
+  it('recommends increasing test coverage when test ratio is below 50%', () => {
+    writeFile(dir, 'tests/index.test.ts', 'test("ok", () => {});\n');
+    for (let i = 0; i < 5; i++) {
+      writeFile(dir, `src/module${i}.ts`, `export const v${i} = ${i};\n`);
+    }
+
+    const plan = generatePlan(dir, baseStack);
+    const coverageRec = plan.recommendations.find(
+      r => r.title === 'Increase test coverage',
+    );
+    expect(plan.structure.testRatio).toBeLessThan(50);
+    expect(coverageRec).toBeDefined();
+    expect(coverageRec?.priority).toBe('must');
+  });
+
+  it('uses Jest fallback when testFramework is undefined in ADR testing strategy', () => {
+    const noTestFrameworkStack = {
+      ...baseStack,
+      testFramework: undefined,
+    };
+
+    const plan = generatePlan(dir, noTestFrameworkStack);
+    const testingAdr = plan.adrs.find(a => a.title.includes('Testing Strategy'));
+    expect(testingAdr).toBeDefined();
+    expect(testingAdr?.decision).toContain('Jest for unit tests');
+  });
+
   it('determines scaling strategy for spring framework', () => {
     const springStack = {
       ...baseStack,
