@@ -316,6 +316,21 @@ describe('planner', () => {
 // ─── planner/walker.ts branch coverage ───────────────────────────────────────
 
 describe('walkProjectFiles — branch coverage', () => {
+  it('returns immediately when maxFiles is 0 (line 32 true branch)', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-walker-max-zero-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'index.ts'), 'export const x = 1;');
+      const results = walkProjectFiles(dir, 0);
+      expect(results).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('returns empty array when root directory is unreadable (catch line 37)', () => {
     const dir = join(
       tmpdir(),
