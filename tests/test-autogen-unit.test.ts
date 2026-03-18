@@ -141,14 +141,9 @@ describe('runGitCommand', () => {
     expect(result).toBe('');
   });
 
-  it('returns output for valid git command in real repo', () => {
-    // Use this repo's own dir as a valid git repo
-    const result = runGitCommand(
-      '/Users/lucassantana/Desenvolvimento/forge-space/forge-ai-init',
-      ['rev-parse', '--abbrev-ref', 'HEAD'],
-    );
-    expect(typeof result).toBe('string');
-    expect(result.length).toBeGreaterThan(0);
+  it('returns output for valid git command in checked-out repo', () => {
+    const result = runGitCommand(process.cwd(), ['rev-parse', '--is-inside-work-tree']);
+    expect(result.trim()).toBe('true');
   });
 });
 
@@ -651,5 +646,3 @@ describe('buildRequirements', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 });
-
-
