@@ -1,5 +1,11 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { getCliVersion, parseArgs, parseTier, parseTools } from '../../src/commands/parse.js';
+import {
+  getCliVersion,
+  parseArgs,
+  parseTier,
+  parseTools,
+  printUsage,
+} from '../../src/commands/parse.js';
 
 describe('parse commands', () => {
   let mockExit: ReturnType<typeof jest.spyOn>;
@@ -25,6 +31,23 @@ describe('parse commands', () => {
     it('returns semver-like string', () => {
       const version = getCliVersion();
       expect(version).toMatch(/^\d+\.\d+\.\d+/);
+    });
+  });
+
+  describe('printUsage', () => {
+    it('prints usage help text', () => {
+      const mockConsoleLog = jest
+        .spyOn(console, 'log')
+        .mockImplementation(jest.fn() as never);
+      try {
+        printUsage();
+        expect(mockConsoleLog).toHaveBeenCalledTimes(1);
+        expect(String(mockConsoleLog.mock.calls[0]?.[0] ?? '')).toContain(
+          'forge-ai-init',
+        );
+      } finally {
+        mockConsoleLog.mockRestore();
+      }
     });
   });
 
@@ -177,6 +200,11 @@ describe('parse commands', () => {
     it('parses --tools with value', () => {
       const result = parseArgs(['--tools', 'claude,cursor']);
       expect(result['tools']).toBe('claude,cursor');
+    });
+
+    it('ignores option flags without a value', () => {
+      const result = parseArgs(['--dir']);
+      expect(result['dir']).toBeUndefined();
     });
 
     it('parses multiple flags together', () => {
