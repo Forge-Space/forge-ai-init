@@ -118,4 +118,32 @@ describe('runDoctorCommand', () => {
     expect(calls).toContain('architecture');
     expect(calls).toContain('testing');
   });
+
+  it('shows 0/N category label when all checks fail', () => {
+    mockRunDoctor.mockReturnValue(makeHealthReport({
+      checks: [
+        { name: 'No god files', status: 'fail', message: 'God file found', category: 'architecture' },
+        { name: 'No cycles', status: 'fail', message: 'Circular deps found', category: 'architecture' },
+      ],
+    }));
+
+    runDoctorCommand('/tmp/proj', makeStack(), false);
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('0/2');
+    expect(calls).toContain('architecture');
+  });
+
+  it('shows partial pass label when category has mixed statuses', () => {
+    mockRunDoctor.mockReturnValue(makeHealthReport({
+      checks: [
+        { name: 'No god files', status: 'pass', message: 'All good', category: 'architecture' },
+        { name: 'No cycles', status: 'warn', message: 'Potential cycle', category: 'architecture' },
+      ],
+    }));
+
+    runDoctorCommand('/tmp/proj', makeStack(), false);
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).toContain('1/2');
+    expect(calls).toContain('architecture');
+  });
 });
