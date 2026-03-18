@@ -2,7 +2,13 @@
 
 ## [Unreleased]
 
-## [0.36.0] - 2026-03-16
+### Added
+
+- Added `tests/changelog.test.ts` to enforce unique version headings in `CHANGELOG.md` and prevent duplicate release sections.
+
+### Fixed
+
+- Removed duplicate `## [0.36.0] - 2026-03-16` heading.
 
 ## [0.36.0] - 2026-03-16
 
