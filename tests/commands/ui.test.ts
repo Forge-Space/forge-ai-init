@@ -70,6 +70,24 @@ describe('ui helpers', () => {
       expect(result).toContain('No');
     });
 
+    it('shows No for linting, type checking, and formatting when disabled', () => {
+      const result = formatStack(
+        makeStack({
+          hasLinting: false,
+          hasTypeChecking: false,
+          hasFormatting: false,
+        }),
+      );
+      expect(result).toContain('Linting:      No');
+      expect(result).toContain('Type Check:   No');
+      expect(result).toContain('Formatting:   No');
+    });
+
+    it('falls back to Yes label when CI is enabled without provider name', () => {
+      const result = formatStack(makeStack({ hasCi: true, ciProvider: undefined }));
+      expect(result).toContain('CI/CD:        Yes');
+    });
+
     it('includes buildCommand when present', () => {
       const result = formatStack(makeStack({ buildCommand: 'npm run build' }));
       expect(result).toContain('npm run build');

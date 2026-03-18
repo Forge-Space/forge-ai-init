@@ -7,6 +7,7 @@
 - Added 9 targeted coverage tests for `ci-command` and `tenant-profile` flows in `tests/ci-command.test.ts` and `tests/tenant-profile.test.ts`.
 - Added 2 targeted coverage tests for `parse` option/version fallback paths in `tests/commands/parse.test.ts` and `tests/commands/parse-version.test.ts`.
 - Added 1 defensive fallback test for `diff-analyzer` temp-dir failure path in `tests/diff-analyzer-fallback.test.ts`.
+- Added 2 targeted coverage tests for `formatStack` negative/fallback branches in `tests/commands/ui.test.ts`.
 
 ### Coverage
 
@@ -14,6 +15,7 @@
 - `src/tenant-profile.ts`: 87.5% -> **98.86%** branches
 - `src/commands/parse.ts`: 94.28% -> **95.71%** branches
 - `src/diff-analyzer.ts`: 74.19% -> **77.41%** branches (focused run with fallback path coverage)
+- `src/commands/ui.ts`: 91.48% -> **100%** branches
 
 ## [0.39.0] - 2026-03-18
 
