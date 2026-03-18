@@ -4,12 +4,12 @@
 
 ### Added
 
-- Added 7 targeted coverage tests for `ci-command` and `tenant-profile` flows in `tests/ci-command.test.ts` and `tests/tenant-profile.test.ts`.
+- Added 9 targeted coverage tests for `ci-command` and `tenant-profile` flows in `tests/ci-command.test.ts` and `tests/tenant-profile.test.ts`.
 
 ### Coverage
 
-- `src/ci-command.ts`: 85% -> **95%** branches
-- `src/tenant-profile.ts`: 87.5% -> **97.72%** branches
+- `src/ci-command.ts`: 85% -> **100%** branches
+- `src/tenant-profile.ts`: 87.5% -> **98.86%** branches
 
 ## [0.39.0] - 2026-03-18
 

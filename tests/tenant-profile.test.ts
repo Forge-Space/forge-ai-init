@@ -378,6 +378,33 @@ describe('resolveTenantContext', () => {
     ).toThrow('Invalid tenant profile');
   });
 
+  it('throws when ci_policy is not an object even when quality_policy is valid', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'invalid-ci-policy.json');
+    writeFileSync(
+      profilePath,
+      JSON.stringify({
+        tenant_id: 'acme-sandbox',
+        github_owner: 'acme-org',
+        sonar_org: 'acme-org',
+        npm_scope: '@acme',
+        quality_policy: {
+          min_quality_score: 80,
+          block_on_critical: true,
+          block_on_high: true,
+        },
+        ci_policy: 1,
+      }),
+    );
+
+    expect(() =>
+      resolveTenantContext(tempDir, {
+        tenant: 'acme-sandbox',
+        'tenant-profile-ref': profilePath,
+      }),
+    ).toThrow('Invalid tenant profile');
+  });
+
   it('throws when profile ref points to a directory', () => {
     tempDir = makeTempDir();
     const dirRef = join(tempDir, 'profiles');

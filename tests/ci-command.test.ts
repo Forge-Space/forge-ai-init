@@ -144,4 +144,13 @@ describe('ci-command', () => {
     });
     expect(result.content).toContain('- npx forge-ai-init baseline');
   });
+
+  it('falls back to 40 when phase is unknown and threshold is not set', () => {
+    const result = generateCiPipeline(dir, {
+      provider: 'github-actions',
+      phase: 'unknown-phase' as CiOptions['phase'],
+    });
+    expect(result.content).toContain('--phase unknown-phase');
+    expect(result.content).toContain('--threshold 40');
+  });
 });
