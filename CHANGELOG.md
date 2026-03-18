@@ -10,6 +10,7 @@
 - Added 2 targeted coverage tests for `formatStack` negative/fallback branches in `tests/commands/ui.test.ts`.
 - Added 2 targeted coverage tests for config preset/override edge branches in `tests/config.test.ts`.
 - Added 2 targeted coverage tests for planner recommendation/ADR fallback branches in `tests/planner.test.ts`.
+- Added 1 targeted migration-readiness test for high-risk threshold behavior in `tests/assessor.test.ts`.
 
 ### Coverage
 

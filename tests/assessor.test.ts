@@ -390,6 +390,19 @@ describe('assessProject', () => {
       expect(report.migrationReadiness).toBe('ready');
     });
 
+    it('marks high-risk when there are more than 3 critical findings', () => {
+      writeFile(dir, '.gitignore', 'dist\nnode_modules\n'); // .env missing -> critical
+      writeFile(dir, 'src/huge.ts', Array(1100).fill('const x = 1;').join('\n')); // critical god-file
+      writeFile(dir, 'src/index.ts', 'export const x = 1;\n');
+
+      const report = assessProject(dir, makeStack({ testFramework: undefined }));
+      // Criticals from: .env not gitignored, no test framework, migration unsafe, critical god-file
+      expect(
+        report.findings.filter((f) => f.severity === 'critical').length,
+      ).toBeGreaterThan(3);
+      expect(report.migrationReadiness).toBe('high-risk');
+    });
+
     it('flags global state pollution', () => {
       writeFile(dir, '.gitignore', '.env\n');
       const globals = Array(6).fill(0)
