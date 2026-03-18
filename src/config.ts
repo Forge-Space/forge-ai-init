@@ -77,7 +77,7 @@ function resolveConfig(config: ForgeConfig): ForgeConfig {
       ...(config.rules ?? {}),
     },
     thresholds: {
-      ...(preset.thresholds ?? {}),
+      ...preset.thresholds,
       ...(config.thresholds ?? {}),
     },
   };
@@ -124,12 +124,12 @@ export function isFileIgnored(
     return false;
 
   for (const pattern of config.ignore) {
+    if (relPath === pattern) return true;
     if (relPath.startsWith(pattern)) return true;
     if (pattern.endsWith('*')) {
       const prefix = pattern.slice(0, -1);
       if (relPath.startsWith(prefix)) return true;
     }
-    if (relPath === pattern) return true;
   }
   return false;
 }

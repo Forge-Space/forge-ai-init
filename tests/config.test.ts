@@ -124,6 +124,17 @@ describe('loadConfig', () => {
     expect(config.thresholds?.deploy).toBe(90);
   });
 
+  it('returns config unchanged for unknown preset', () => {
+    writeFile(
+      dir,
+      '.forgerc.json',
+      JSON.stringify({ extends: 'unknown', maxFiles: 42 }),
+    );
+    const config = loadConfig(dir);
+    expect(config.maxFiles).toBe(42);
+    expect(config.thresholds).toBeUndefined();
+  });
+
   it('handles malformed JSON gracefully', () => {
     writeFile(dir, '.forgerc.json', '{ broken json');
     const config = loadConfig(dir);
@@ -174,6 +185,16 @@ describe('rule helpers', () => {
         'low',
       ),
     ).toBe('low');
+  });
+
+  it('getRuleSeverity returns default when override has no severity', () => {
+    expect(
+      getRuleSeverity(
+        { rules: { 'console-log': { disabled: false } } },
+        'console-log',
+        'medium',
+      ),
+    ).toBe('medium');
   });
 
   it('isCategoryEnabled defaults to true', () => {
