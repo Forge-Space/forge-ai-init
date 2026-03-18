@@ -296,4 +296,98 @@ describe('resolveTenantContext', () => {
 
     expect(context.tenantId).toBe('acme-sandbox');
   });
+
+  it('parses false booleans and single-quoted scalars in yaml', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'tenant-false.yaml');
+    writeFileSync(
+      profilePath,
+      `tenant_id: acme-sandbox\n` +
+        `github_owner: acme-org\n` +
+        `sonar_org: acme-org\n` +
+        `npm_scope: '@acme'\n` +
+        `quality_policy:\n` +
+        `  min_quality_score: 80\n` +
+        `  block_on_critical: false\n` +
+        `  block_on_high: false\n` +
+        `ci_policy:\n` +
+        `  require_sonar: false\n` +
+        `  require_security_scan: true\n` +
+        `  enforce_pr_checks: false\n`,
+    );
+
+    const context = resolveTenantContext(tempDir, {
+      tenant: 'acme-sandbox',
+      'tenant-profile-ref': profilePath,
+    });
+
+    expect(context.profile.npm_scope).toBe('@acme');
+    expect(context.profile.quality_policy.block_on_critical).toBe(false);
+    expect(context.profile.ci_policy.require_sonar).toBe(false);
+  });
+
+  it('ignores malformed and invalid-key yaml lines', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'tenant-malformed.yaml');
+    writeFileSync(
+      profilePath,
+      `tenant_id: acme-sandbox\n` +
+        `github_owner: acme-org\n` +
+        `sonar_org: acme-org\n` +
+        `npm_scope: '@acme'\n` +
+        `broken-line-without-separator\n` +
+        `quality policy: ignored\n` +
+        `quality_policy:\n` +
+        `  min_quality_score: 80\n` +
+        `  block_on_critical: true\n` +
+        `  block_on_high: true\n` +
+        `ci_policy:\n` +
+        `  require_sonar: true\n` +
+        `  require_security_scan: true\n` +
+        `  enforce_pr_checks: true\n`,
+    );
+
+    const context = resolveTenantContext(tempDir, {
+      tenant: 'acme-sandbox',
+      'tenant-profile-ref': profilePath,
+    });
+
+    expect(context.tenantId).toBe('acme-sandbox');
+  });
+
+  it('throws when quality_policy and ci_policy are not objects', () => {
+    tempDir = makeTempDir();
+    const profilePath = join(tempDir, 'invalid-policy-types.json');
+    writeFileSync(
+      profilePath,
+      JSON.stringify({
+        tenant_id: 'acme-sandbox',
+        github_owner: 'acme-org',
+        sonar_org: 'acme-org',
+        npm_scope: '@acme',
+        quality_policy: true,
+        ci_policy: 1,
+      }),
+    );
+
+    expect(() =>
+      resolveTenantContext(tempDir, {
+        tenant: 'acme-sandbox',
+        'tenant-profile-ref': profilePath,
+      }),
+    ).toThrow('Invalid tenant profile');
+  });
+
+  it('throws when profile ref points to a directory', () => {
+    tempDir = makeTempDir();
+    const dirRef = join(tempDir, 'profiles');
+    mkdirSync(dirRef, { recursive: true });
+
+    expect(() =>
+      resolveTenantContext(tempDir, {
+        tenant: 'acme-sandbox',
+        'tenant-profile-ref': dirRef,
+      }),
+    ).toThrow('Tenant profile not found');
+  });
 });

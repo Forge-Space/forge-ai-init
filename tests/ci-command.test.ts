@@ -119,4 +119,29 @@ describe('ci-command', () => {
     });
     expect(result.content).toContain('--threshold 85');
   });
+
+  it('falls back to phase threshold when threshold is falsy', () => {
+    const result = generateCiPipeline(dir, {
+      provider: 'github-actions',
+      phase: 'stabilization',
+      threshold: 0,
+    });
+    expect(result.content).toContain('--threshold 60');
+  });
+
+  it('includes baseline script for gitlab when requested', () => {
+    const result = generateCiPipeline(dir, {
+      provider: 'gitlab-ci',
+      includeBaseline: true,
+    });
+    expect(result.content).toContain('- npx forge-ai-init baseline');
+  });
+
+  it('includes baseline script for bitbucket when requested', () => {
+    const result = generateCiPipeline(dir, {
+      provider: 'bitbucket',
+      includeBaseline: true,
+    });
+    expect(result.content).toContain('- npx forge-ai-init baseline');
+  });
 });
