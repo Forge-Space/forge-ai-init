@@ -12,6 +12,7 @@
 - Added 2 targeted coverage tests for planner recommendation/ADR fallback branches in `tests/planner.test.ts`.
 - Added 1 targeted migration-readiness test for high-risk threshold behavior in `tests/assessor.test.ts`.
 - Added 2 targeted coverage tests for doctor category-label branches in `tests/commands/doctor.test.ts`.
+- Added 3 targeted branch-coverage tests for `test-autogen/git` fallback and staged paths in `tests/test-autogen-git-branches.test.ts`.
 
 ### Coverage
 
@@ -23,6 +24,7 @@
 - `src/config.ts`: 90% -> **100%** branches
 - `src/planner/recommendations.ts`: 90% -> **95%** branches
 - `src/commands/doctor.ts`: 91.66% -> **100%** branches
+- `src/test-autogen/git.ts`: 83.33% -> **91.66%** branches
 
 ## [0.39.0] - 2026-03-18
 
