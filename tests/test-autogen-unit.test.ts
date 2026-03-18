@@ -141,15 +141,9 @@ describe('runGitCommand', () => {
     expect(result).toBe('');
   });
 
-  it('returns output for valid git command in real repo', () => {
-    const tempDir = makeTempDir();
-    try {
-      execFileSync('git', ['init'], { cwd: tempDir, stdio: 'ignore' });
-      const result = runGitCommand(tempDir, ['rev-parse', '--is-inside-work-tree']);
-      expect(result.trim()).toBe('true');
-    } finally {
-      rmSync(tempDir, { recursive: true, force: true });
-    }
+  it('returns output for valid git command in checked-out repo', () => {
+    const result = runGitCommand(process.cwd(), ['rev-parse', '--is-inside-work-tree']);
+    expect(result.trim()).toBe('true');
   });
 });
 
