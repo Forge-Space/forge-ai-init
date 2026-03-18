@@ -142,13 +142,14 @@ describe('runGitCommand', () => {
   });
 
   it('returns output for valid git command in real repo', () => {
-    // Use this repo's own dir as a valid git repo
-    const result = runGitCommand(
-      '/Users/lucassantana/Desenvolvimento/forge-space/forge-ai-init',
-      ['rev-parse', '--abbrev-ref', 'HEAD'],
-    );
-    expect(typeof result).toBe('string');
-    expect(result.length).toBeGreaterThan(0);
+    const tempDir = makeTempDir();
+    try {
+      execFileSync('git', ['init'], { cwd: tempDir, stdio: 'ignore' });
+      const result = runGitCommand(tempDir, ['rev-parse', '--is-inside-work-tree']);
+      expect(result.trim()).toBe('true');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -651,5 +652,3 @@ describe('buildRequirements', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 });
-
-
