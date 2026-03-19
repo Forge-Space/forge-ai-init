@@ -10,6 +10,10 @@ import {
 } from '../../src/commands/ui.js';
 import type { DetectedStack } from '../../src/types.js';
 
+function stripAnsi(value: string): string {
+  return value.replace(/\u001b\[[0-9;]*m/g, '');
+}
+
 function makeStack(overrides: Partial<DetectedStack> = {}): DetectedStack {
   return {
     language: 'typescript',
@@ -71,20 +75,20 @@ describe('ui helpers', () => {
     });
 
     it('shows No for linting, type checking, and formatting when disabled', () => {
-      const result = formatStack(
+      const result = stripAnsi(formatStack(
         makeStack({
           hasLinting: false,
           hasTypeChecking: false,
           hasFormatting: false,
         }),
-      );
+      ));
       expect(result).toContain('Linting:      No');
       expect(result).toContain('Type Check:   No');
       expect(result).toContain('Formatting:   No');
     });
 
     it('falls back to Yes label when CI is enabled without provider name', () => {
-      const result = formatStack(makeStack({ hasCi: true, ciProvider: undefined }));
+      const result = stripAnsi(formatStack(makeStack({ hasCi: true, ciProvider: undefined })));
       expect(result).toContain('CI/CD:        Yes');
     });
 
