@@ -202,6 +202,19 @@ describe('assessProject', () => {
       const report = assessProject(dir, makeStack());
       expect(report.findings.find((f) => f.title === 'Function sprawl')).toBeDefined();
     });
+
+    it('detects high coupling from many imports', () => {
+      writeFile(dir, '.gitignore', '.env\n');
+      const imports = Array(20)
+        .fill(0)
+        .map((_, i) => `import mod${i} from "./dep${i}.js";`)
+        .join('\n');
+      writeFile(dir, 'src/coupled.ts', `${imports}\nexport const run = () => 1;\n`);
+      const report = assessProject(dir, makeStack());
+      const highCoupling = report.findings.find((f) => f.title === 'High coupling');
+      expect(highCoupling).toBeDefined();
+      expect(highCoupling!.severity).toBe('high');
+    });
   });
 
   describe('security collector', () => {
