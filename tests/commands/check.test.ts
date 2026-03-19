@@ -107,6 +107,33 @@ describe('runCheckCommand', () => {
     expect(() => runCheckCommand('/tmp/proj', makeStack())).not.toThrow();
   });
 
+  it('runs with a summary category that has zero passes', () => {
+    mockRunAudit.mockReturnValue(makeAuditReport({
+      grade: 'C',
+      score: 58,
+      summary: [
+        { category: 'rules', passed: 0, total: 2, label: 'AI Rules' },
+      ],
+      checks: [
+        {
+          name: 'missing-rules',
+          status: 'fail',
+          detail: 'No CLAUDE.md found',
+          category: 'rules',
+          weight: 10,
+        },
+        {
+          name: 'missing-skills',
+          status: 'fail',
+          detail: 'No skills found',
+          category: 'rules',
+          weight: 5,
+        },
+      ],
+    }));
+    expect(() => runCheckCommand('/tmp/proj', makeStack())).not.toThrow();
+  });
+
   it('calls runAudit with the project dir and stack', () => {
     mockRunAudit.mockReturnValue(makeAuditReport());
     runCheckCommand('/my/project', makeStack());
