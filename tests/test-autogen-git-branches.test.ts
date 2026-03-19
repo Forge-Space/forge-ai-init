@@ -64,4 +64,22 @@ describe('test-autogen git branch coverage', () => {
       expect.objectContaining({ cwd: '/tmp/project' }),
     );
   });
+
+  it('uses baseRef...HEAD when baseRef is safe and staged=false', async () => {
+    mockExistsSync.mockReturnValue(true);
+    mockExecFileSync.mockReturnValue('src/c.ts\n');
+
+    const git = await import('../src/test-autogen/git.js');
+    const files = git.readChangedFiles('/tmp/project', {
+      staged: false,
+      baseRef: 'main',
+    });
+
+    expect(files).toEqual(['src/c.ts']);
+    expect(mockExecFileSync).toHaveBeenCalledWith(
+      '/usr/bin/git',
+      ['diff', '--name-only', 'main...HEAD'],
+      expect.objectContaining({ cwd: '/tmp/project' }),
+    );
+  });
 });

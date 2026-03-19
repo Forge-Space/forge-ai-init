@@ -12,7 +12,7 @@
 - Added 2 targeted coverage tests for planner recommendation/ADR fallback branches in `tests/planner.test.ts`.
 - Added 1 targeted migration-readiness test for high-risk threshold behavior in `tests/assessor.test.ts`.
 - Added 2 targeted coverage tests for doctor category-label branches in `tests/commands/doctor.test.ts`.
-- Added 3 targeted branch-coverage tests for `test-autogen/git` fallback and staged paths in `tests/test-autogen-git-branches.test.ts`.
+- Added 4 targeted branch-coverage tests for `test-autogen/git` fallback, staged, and safe-baseRef paths in `tests/test-autogen-git-branches.test.ts`.
 - Added 1 targeted `maxFiles=0` branch-coverage test for planner walker early return in `tests/planner.test.ts`.
 - Added 3 targeted classifier branch-coverage tests in `tests/test-autogen-classifiers.test.ts`.
 - Added 1 targeted category-summary branch-coverage test for `runCheckCommand` in `tests/commands/check.test.ts`.
@@ -27,7 +27,7 @@
 - `src/config.ts`: 90% -> **100%** branches
 - `src/planner/recommendations.ts`: 90% -> **95%** branches
 - `src/commands/doctor.ts`: 91.66% -> **100%** branches
-- `src/test-autogen/git.ts`: 83.33% -> **91.66%** branches
+- `src/test-autogen/git.ts`: 83.33% -> **100%** branches
 - `src/planner/walker.ts`: 90.9% -> **100%** branches
 - `src/test-autogen/classifiers.ts`: 87.93% -> **94.82%** branches
 - `src/commands/check.ts`: 92.85% -> **100%** branches
