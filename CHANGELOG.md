@@ -18,6 +18,7 @@
 - Added 1 targeted category-summary branch-coverage test for `runCheckCommand` in `tests/commands/check.test.ts`.
 - Added 2 targeted `buildPhases` branch-coverage tests for critical security/dependency stabilize tasks in `tests/migrate-analyzer.test.ts`.
 - Added 2 targeted interactive/non-interactive branch-coverage tests for `runInitCommand` skip/confirmation paths in `tests/commands/init.test.ts`.
+- Added 1 direct branch-coverage test for `collectArchitectureFindings` empty-file-list handling in `tests/assessor.test.ts`.
 
 ### Coverage
 
@@ -35,6 +36,7 @@
 - `src/commands/check.ts`: 92.85% -> **100%** branches
 - `src/migrate-analyzer/phases.ts`: 91.66% -> **100%** branches
 - `src/commands/init.ts`: 92.5% -> **100%** branches
+- `src/assessors/architecture.ts`: 92.85% -> **100%** branches
 
 ## [0.39.0] - 2026-03-18
 

@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync, rmSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { assessProject } from '../src/assessor.js';
+import { collectArchitectureFindings } from '../src/assessors/architecture.js';
 import { collectSecurityFindings } from '../src/assessors/security.js';
 import type { DetectedStack } from '../src/types.js';
 
@@ -651,5 +652,17 @@ describe('collectSecurityFindings', () => {
     // The loop breaks at 10 so we should never exceed 10 secret findings
     expect(secretFindings.length).toBeLessThanOrEqual(10);
     expect(secretFindings.length).toBeGreaterThan(0);
+  });
+});
+
+describe('collectArchitectureFindings', () => {
+  let dir: string;
+
+  beforeEach(() => { dir = makeTempDir(); });
+  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+
+  it('handles empty file list without division by zero', () => {
+    const findings = collectArchitectureFindings(dir, []);
+    expect(findings).toEqual([]);
   });
 });
