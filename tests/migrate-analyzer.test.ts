@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { analyzeMigration } from '../src/migrate-analyzer.js';
 import { findStranglerBoundaries } from '../src/migrate-analyzer/boundaries.js';
 import { analyzeDependencyRisks } from '../src/migrate-analyzer/dependency-risks.js';
-import { estimateEffort } from '../src/migrate-analyzer/phases.js';
+import { buildPhases, estimateEffort } from '../src/migrate-analyzer/phases.js';
 import { analyzeTypingNeeds } from '../src/migrate-analyzer/typing-needs.js';
 import type { DetectedStack } from '../src/types.js';
 import type { ScanReport } from '../src/scanner.js';
@@ -659,5 +659,91 @@ describe('estimateEffort — upper tier branches', () => {
     const scan = makeScanReport([]);
     const effort = estimateEffort(boundaries, emptyTypingSteps, emptyDepRisks, scan);
     expect(effort).toBe('1-2 months');
+  });
+});
+
+describe('buildPhases — stabilize critical task branches', () => {
+  const emptyBoundaries: StranglerBoundary[] = [];
+  const emptyTypingSteps: TypingStep[] = [];
+
+  it('includes critical security and dependency tasks when present', () => {
+    const scan = makeScanReport([
+      {
+        file: 'src/app.ts',
+        line: 10,
+        category: 'security',
+        severity: 'critical',
+        rule: 'sql-injection',
+        message: 'Critical security issue',
+      },
+      {
+        file: 'src/app.ts',
+        line: 11,
+        category: 'security',
+        severity: 'high',
+        rule: 'xss',
+        message: 'High security issue',
+      },
+    ]);
+    const depRisks: DependencyRisk[] = [
+      {
+        name: 'request',
+        currentVersion: '2.88.0',
+        severity: 'critical',
+        issue: 'Deprecated package',
+        recommendation: 'Replace with maintained alternative',
+      },
+    ];
+
+    const phases = buildPhases(scan, emptyBoundaries, emptyTypingSteps, depRisks);
+    const stabilize = phases[0]!;
+
+    expect(stabilize.name).toContain('Stabilize');
+    expect(
+      stabilize.tasks.some((t) => t.includes('Fix 1 critical security findings')),
+    ).toBe(true);
+    expect(
+      stabilize.tasks.some((t) => t.includes('Replace 1 deprecated dependencies')),
+    ).toBe(true);
+  });
+
+  it('omits critical tasks when no critical findings or deps exist', () => {
+    const scan = makeScanReport([
+      {
+        file: 'src/app.ts',
+        line: 20,
+        category: 'security',
+        severity: 'high',
+        rule: 'xss',
+        message: 'Non-critical security issue',
+      },
+      {
+        file: 'src/app.ts',
+        line: 21,
+        category: 'architecture',
+        severity: 'critical',
+        rule: 'god-file',
+        message: 'Critical but non-security issue',
+      },
+    ]);
+    const depRisks: DependencyRisk[] = [
+      {
+        name: 'lodash',
+        currentVersion: '4.17.21',
+        severity: 'high',
+        issue: 'Large dependency surface',
+        recommendation: 'Evaluate lighter utility replacements',
+      },
+    ];
+
+    const phases = buildPhases(scan, emptyBoundaries, emptyTypingSteps, depRisks);
+    const stabilize = phases[0]!;
+
+    expect(
+      stabilize.tasks.some((t) => t.includes('critical security findings')),
+    ).toBe(false);
+    expect(
+      stabilize.tasks.some((t) => t.includes('deprecated dependencies')),
+    ).toBe(false);
   });
 });

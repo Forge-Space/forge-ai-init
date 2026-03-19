@@ -16,6 +16,7 @@
 - Added 1 targeted `maxFiles=0` branch-coverage test for planner walker early return in `tests/planner.test.ts`.
 - Added 3 targeted classifier branch-coverage tests in `tests/test-autogen-classifiers.test.ts`.
 - Added 1 targeted category-summary branch-coverage test for `runCheckCommand` in `tests/commands/check.test.ts`.
+- Added 2 targeted `buildPhases` branch-coverage tests for critical security/dependency stabilize tasks in `tests/migrate-analyzer.test.ts`.
 
 ### Coverage
 
@@ -31,6 +32,7 @@
 - `src/planner/walker.ts`: 90.9% -> **100%** branches
 - `src/test-autogen/classifiers.ts`: 87.93% -> **94.82%** branches
 - `src/commands/check.ts`: 92.85% -> **100%** branches
+- `src/migrate-analyzer/phases.ts`: 91.66% -> **100%** branches
 
 ## [0.39.0] - 2026-03-18
 
