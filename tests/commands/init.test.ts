@@ -1,5 +1,6 @@
 import { jest, describe, it, expect, beforeEach, afterEach, beforeAll } from '@jest/globals';
 import type { DetectedStack } from '../../src/types.js';
+import type { AITool, Tier } from '../../src/types.js';
 
 const mockGenerate = jest.fn();
 const mockIntro = jest.fn();
@@ -10,10 +11,10 @@ const mockLogWarn = jest.fn();
 const mockSpinnerStart = jest.fn();
 const mockSpinnerStop = jest.fn();
 const mockSpinner = jest.fn();
-const mockSelect = jest.fn();
-const mockMultiselect = jest.fn();
-const mockConfirm = jest.fn();
-const mockIsCancel = jest.fn();
+const mockSelect = jest.fn<() => Promise<Tier>>();
+const mockMultiselect = jest.fn<() => Promise<AITool[]>>();
+const mockConfirm = jest.fn<() => Promise<boolean>>();
+const mockIsCancel = jest.fn<() => boolean>();
 const mockCancel = jest.fn();
 const mockNote = jest.fn();
 
@@ -37,8 +38,8 @@ jest.unstable_mockModule('@clack/prompts', () => ({
 let runNonInteractive: (
   projectDir: string,
   stack: DetectedStack,
-  tier: string,
-  tools: string[],
+  tier: Tier,
+  tools: AITool[],
   force: boolean,
   dryRun: boolean,
   migrate: boolean,
@@ -128,6 +129,13 @@ describe('runNonInteractive', () => {
     runNonInteractive('/tmp/proj', makeStack(), 'standard', ['claude'], false, false, false);
     const calls = consoleSpy.mock.calls.flat().join('');
     expect(calls).toContain('CLAUDE.md');
+  });
+
+  it('does not show force hint when force=true', () => {
+    mockGenerate.mockReturnValue({ created: [], skipped: ['/tmp/proj/CLAUDE.md'] });
+    runNonInteractive('/tmp/proj', makeStack(), 'standard', ['claude'], true, false, false);
+    const calls = consoleSpy.mock.calls.flat().join('');
+    expect(calls).not.toContain('Use --force to overwrite existing files');
   });
 
   it('shows tier in output', () => {
@@ -275,6 +283,20 @@ describe('runInteractive', () => {
     const noteCall = mockNote.mock.calls[0];
     expect(noteCall).toBeDefined();
     expect(noteCall[0]).toContain('migration-audit');
+  });
+
+  it('omits migration label and steps when migrate=false', async () => {
+    mockConfirm.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    mockGenerate.mockReturnValue({ created: ['/tmp/proj/CLAUDE.md'], skipped: [] });
+    await runInteractive('/tmp/proj', makeStack(), false, false);
+
+    const confirmCalls = mockConfirm.mock.calls as unknown[][];
+    const secondConfirmArg = (confirmCalls[1]?.[0] as { message?: string } | undefined) ?? {};
+    expect(secondConfirmArg.message ?? '').not.toContain('migration');
+
+    const noteCall = mockNote.mock.calls[0] as [string, string];
+    expect(noteCall[0]).not.toContain('migration-audit');
+    expect(noteCall[0]).not.toContain('tech-debt-review');
   });
 
   it('does not call p.note when dryRun=true', async () => {
