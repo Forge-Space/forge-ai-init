@@ -567,6 +567,20 @@ describe('detectPackageManager — branch coverage', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it('detects go from go.sum', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-pm-go-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'go.sum'), 'github.com/x/y v1.0.0 h1:abc');
+      expect(detectPackageManager(dir)).toBe('go');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('detectTestFramework — branch coverage', () => {
@@ -622,6 +636,20 @@ describe('detectTestFramework — branch coverage', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it('returns undefined when pytest.ini exists but pyproject.toml does not', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-pytest-ini-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, 'pytest.ini'), '[pytest]\naddopts = -q\n');
+      expect(detectTestFramework(dir, {})).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('detectCIProvider — branch coverage', () => {
@@ -648,6 +676,20 @@ describe('detectCIProvider — branch coverage', () => {
     try {
       writeFileSync(join(dir, 'Jenkinsfile'), 'pipeline {}');
       expect(detectCIProvider(dir)).toBe('jenkins');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('falls through when github workflows contain no yml/yaml files', () => {
+    const dir = join(
+      tmpdir(),
+      `forge-ci-gh-empty-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+    try {
+      writeFileSync(join(dir, '.github', 'workflows', 'README.txt'), 'notes');
+      expect(detectCIProvider(dir)).toBeUndefined();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
