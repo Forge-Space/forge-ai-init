@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-03-20
+
 ### Added
 
 - Added 9 targeted coverage tests for `ci-command` and `tenant-profile` flows in `tests/ci-command.test.ts` and `tests/tenant-profile.test.ts`.
