@@ -875,6 +875,15 @@ COLOR=$( [ "$SCORE" -ge 90 ] && echo "brightgreen" || [ "$SCORE" -ge 75 ] && ech
 echo "![Governance](https://img.shields.io/badge/governance-${GRADE}%20${SCORE}%25-${COLOR})"
 ```
 
+## AI Development Patterns
+
+For patterns, rule templates, and pre-built agent companies that complement `forge-ai-init`:
+
+- **[ai-dev-toolkit](https://github.com/Forge-Space/ai-dev-toolkit)** — tool-agnostic patterns for context building, memory systems, and multi-agent orchestration
+  - Drop-in rule templates: `CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `COPILOT.md`, `AGENTS.md`
+  - Pre-built agent companies: `fullstack-forge` (49 agents, 66 skills, 10 teams)
+  - Patterns: context building, session management, task orchestration, code review, and more
+
 ## License
 
 MIT
