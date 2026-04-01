@@ -20,6 +20,7 @@ const config: Config = {
   // ESM unstable_mockModule requires serial execution to avoid module registry conflicts
   maxWorkers: 1,
   collectCoverageFrom: ["src/**/*.ts", "!src/index.ts"],
+  coverageReporters: ["text", "lcov", "json-summary"],
   coverageThreshold: {
     global: {
       branches: 80,
