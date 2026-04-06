@@ -2,6 +2,46 @@
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-04-06
+
+### Added
+
+- Added 9 targeted coverage tests for `ci-command` and `tenant-profile` flows in `tests/ci-command.test.ts` and `tests/tenant-profile.test.ts`.
+- Added 2 targeted coverage tests for `parse` option/version fallback paths in `tests/commands/parse.test.ts` and `tests/commands/parse-version.test.ts`.
+- Added 1 defensive fallback test for `diff-analyzer` temp-dir failure path in `tests/diff-analyzer-fallback.test.ts`.
+- Added 2 targeted coverage tests for `formatStack` negative/fallback branches in `tests/commands/ui.test.ts`.
+- Added 2 targeted coverage tests for config preset/override edge branches in `tests/config.test.ts`.
+- Added 2 targeted coverage tests for planner recommendation/ADR fallback branches in `tests/planner.test.ts`.
+- Added 1 targeted migration-readiness test for high-risk threshold behavior in `tests/assessor.test.ts`.
+- Added 2 targeted coverage tests for doctor category-label branches in `tests/commands/doctor.test.ts`.
+- Added 4 targeted branch-coverage tests for `test-autogen/git` fallback, staged, and safe-baseRef paths in `tests/test-autogen-git-branches.test.ts`.
+- Added 1 targeted `maxFiles=0` branch-coverage test for planner walker early return in `tests/planner.test.ts`.
+- Added 3 targeted classifier branch-coverage tests in `tests/test-autogen-classifiers.test.ts`.
+- Added 1 targeted category-summary branch-coverage test for `runCheckCommand` in `tests/commands/check.test.ts`.
+- Added 2 targeted `buildPhases` branch-coverage tests for critical security/dependency stabilize tasks in `tests/migrate-analyzer.test.ts`.
+- Added 2 targeted interactive/non-interactive branch-coverage tests for `runInitCommand` skip/confirmation paths in `tests/commands/init.test.ts`.
+- Added 1 direct branch-coverage test for `collectArchitectureFindings` empty-file-list handling in `tests/assessor.test.ts`.
+- Added 3 targeted detector tooling branch-coverage tests for `go.sum`, `pytest.ini` fallback, and non-YAML GitHub workflow folder handling in `tests/detector.test.ts`.
+
+### Coverage
+
+- `src/ci-command.ts`: 85% -> **100%** branches
+- `src/tenant-profile.ts`: 87.5% -> **98.86%** branches
+- `src/commands/parse.ts`: 94.28% -> **95.71%** branches
+- `src/diff-analyzer.ts`: 74.19% -> **77.41%** branches (focused run with fallback path coverage)
+- `src/commands/ui.ts`: 91.48% -> **100%** branches
+- `src/config.ts`: 90% -> **100%** branches
+- `src/planner/recommendations.ts`: 90% -> **95%** branches
+- `src/commands/doctor.ts`: 91.66% -> **100%** branches
+- `src/test-autogen/git.ts`: 83.33% -> **100%** branches
+- `src/planner/walker.ts`: 90.9% -> **100%** branches
+- `src/test-autogen/classifiers.ts`: 87.93% -> **94.82%** branches
+- `src/commands/check.ts`: 92.85% -> **100%** branches
+- `src/migrate-analyzer/phases.ts`: 91.66% -> **100%** branches
+- `src/commands/init.ts`: 92.5% -> **100%** branches
+- `src/assessors/architecture.ts`: 92.85% -> **100%** branches
+- `src/detector/tooling.ts`: 93.93% -> **100%** branches
+
 ## [0.40.0] - 2026-03-20
 
 ### Added
